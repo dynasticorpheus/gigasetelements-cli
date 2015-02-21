@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 _author_  = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.0'
+_version_ = '1.0.1'
 
 import gc ; gc.disable()
 import argparse 
@@ -15,18 +15,21 @@ parser = argparse.ArgumentParser(description='Gigaset Elements - Command Line In
 parser.add_argument('-u','--username', help='username (email) in use with my.gigaset-elements.com',required=True)
 parser.add_argument('-p','--password', help='password in use with my.gigaset-elements.com',required=True)
 parser.add_argument('-n','--notify', help='pushbullet token',required=False)
+parser.add_argument('-e','--events', help='show last <number> of events',type=int, required=False)
 parser.add_argument('-m','--modus', help='set modus',required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s','--status', help='show system status', action='store_true', required=False)
 parser.add_argument('-w','--warning', help='suppress authentication warnings', action='store_true', required=False)
 parser.add_argument('-v','--version', help='show version', action='version', version="%(prog)s version "+str(_version_))
-
 args = parser.parse_args()
+
 
 if args.warning != True : pass
 else:
 	requests.packages.urllib3.disable_warnings()
 
+
 s = requests.Session()
+
 
 def connect() :
         global my_basestation
@@ -54,6 +57,7 @@ def modus_switch() :
 	r4 = s.post('https://api.gigaset-elements.de/api/v1/me/basestations/'+my_basestation, data=json.dumps(switch))
 	return;
 
+
 def pb_message() :
 	if args.notify == None : pass
 	else:
@@ -61,6 +65,22 @@ def pb_message() :
 		push = pb.push_note("Gigaset Elements", 'Modus set to '+args.modus.upper())
 		print "[-]  PushBullet notification sent"
 	return;
+
+
+def list_events() :
+	print "[-]  Showing last "+str(args.events)+" event(s)"
+	r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit='+str(args.events))
+	event_data = r5.json()
+	for item in event_data["events"]:
+		try:
+			print("[-] "), ; print(time.strftime('%m/%d/%Y %H:%M:%S',  time.localtime(int(item['ts'])/1000))),
+			print item['type'],
+			print item['o']['friendly_name']
+		except KeyError:
+			print
+			continue
+	return;
+
 
 def status() :
 	r6 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
@@ -75,6 +95,7 @@ print
 
 connect()
 
+
 if args.modus == None : pass
 else:
 	modus_switch()
@@ -85,6 +106,11 @@ else:
 if args.status != True : pass
 else:
 	status()
+
+
+if args.events == None : pass
+else:
+	list_events()
 
 
 print
