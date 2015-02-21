@@ -1,7 +1,7 @@
 Gigaset Elements API command-line interface
 ==========
 
-gigasetelements-cli is a python based program which allows you to change the alarm modus of your Gigaset Elements home security system.
+gigasetelements-cli is a python based program which allows you to control your Gigaset Elements home security system.
 It comes with an easy to use CLI (command-line interface) suitable for direct use or cron jobs.
 
 .. image:: http://blog.gigaset.com/wp-content/uploads/2014/05/Gigaset-elements-starter-kit.png
