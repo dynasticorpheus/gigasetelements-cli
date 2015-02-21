@@ -40,6 +40,22 @@ Set alarm modus to AWAY and send PushBullet notification::
     [-]  Modus set to AWAY
     [-]  PushBullet notification sent
 
+Show system EVENTS::
+
+    $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -e 5
+  
+    Gigaset Elements - Command Line Interface
+
+    [-]  User logged in successfully.
+    [-]  Authenticated as "first.last@domain.com" with language "nl"
+    [-]  Basestation F19B75Z4EDC9F128A1P8C79BFA3178A1
+    [-]  Showing last 5 event(s)
+    [-]  02/21/2015 22:03:01 movement Livingroom  
+    [-]  02/21/2015 22:02:25 close Frontdoor
+    [-]  02/21/2015 22:01:24 movement Hallway
+    [-]  02/21/2015 22:01:22 homecoming
+    [-]  02/21/2015 22:01:18 open Frontdoor   
+
 Show system STATUS::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -s
