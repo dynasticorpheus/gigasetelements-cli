@@ -1,19 +1,22 @@
 #!/usr/bin/env python
 
 _author_  = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.1'
+_version_ = '1.0.2'
 
 import gc ; gc.disable()
+import os
+import time
 import argparse 
 import json 
-import time 
 import requests
+import ConfigParser
 from pushbullet import PushBullet
 
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command Line Interface by dynasticorpheus@gmail.com')
-parser.add_argument('-u','--username', help='username (email) in use with my.gigaset-elements.com',required=True)
-parser.add_argument('-p','--password', help='password in use with my.gigaset-elements.com',required=True)
+parser.add_argument('-u','--username', help='username (email) in use with my.gigaset-elements.com', required=False)
+parser.add_argument('-p','--password', help='password in use with my.gigaset-elements.com',required=False)
+parser.add_argument('-c','--config', help='filename of configuration-file',required=False)
 parser.add_argument('-n','--notify', help='pushbullet token',required=False)
 parser.add_argument('-e','--events', help='show last <number> of events',type=int, required=False)
 parser.add_argument('-m','--modus', help='set modus',required=False, choices=('home', 'away', 'custom'))
@@ -29,6 +32,21 @@ else:
 
 
 s = requests.Session()
+
+
+def configure() :
+	if args.config == None : pass
+	else:
+		if os.path.exists(args.config) == False : print('[-]  File does not exist '+args.config) ; print ; exit()
+		print('[-]  Reading configuration from '+args.config)
+		config = ConfigParser.ConfigParser()
+		config.read(args.config)
+		if args.username == None : args.username = config.get("general", "username")
+		if args.password == None : args.password = config.get("general", "password")
+		if args.modus == None : args.modus = config.get("general", "modus")
+		if args.notify == None : args.notify = config.get("general", "notify")
+		if args.notify == '' : args.notify = None
+		return;
 
 
 def connect() :
@@ -48,7 +66,7 @@ def connect() :
 		my_basestation = basestation_data[0]["id"]
 		print('[-]  Basestation'), ; print(my_basestation)
 	else:	
- 		print "[-] Authentication error" ; print ; exit()
+ 		print "[-]  Authentication error" ; print ; exit()
 	return;
 
 
@@ -93,6 +111,7 @@ print
 print "Gigaset Elements - Command Line Interface"
 print
 
+configure()
 connect()
 
 
