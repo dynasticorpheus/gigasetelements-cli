@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 _author_  = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.2'
+_version_ = '1.0.3'
 
 import gc ; gc.disable()
 import os
@@ -26,11 +26,6 @@ parser.add_argument('-v','--version', help='show version', action='version', ver
 args = parser.parse_args()
 
 
-if args.warning != True : pass
-else:
-	requests.packages.urllib3.disable_warnings()
-
-
 s = requests.Session()
 
 
@@ -41,16 +36,22 @@ def configure() :
 		print('[-]  Reading configuration from '+args.config)
 		config = ConfigParser.ConfigParser()
 		config.read(args.config)
-		if args.username == None : args.username = config.get("general", "username")
-		if args.password == None : args.password = config.get("general", "password")
-		if args.modus == None : args.modus = config.get("general", "modus")
-		if args.notify == None : args.notify = config.get("general", "notify")
+		if args.username == None : args.username = config.get("accounts", "username")
+		if args.username  == '' : args.username = None
+		if args.password == None : args.password = config.get("accounts", "password")
+		if args.password == '' : args.password = None
+		if args.modus == None : args.modus = config.get("options", "modus")
+		if args.modus == '' : args.modus = None
+		if args.notify == None : args.notify = config.get("accounts", "pbtoken")
 		if args.notify == '' : args.notify = None
+		if args.warning == True : requests.packages.urllib3.disable_warnings()
+		else :
+			if config.getboolean("options", "nowarning") : requests.packages.urllib3.disable_warnings()
 		return;
 
 
 def connect() :
-        global my_basestation
+	global my_basestation
 	payload = {'password': args.password, 'email': args.username}
 	r = s.post("https://im.gigaset-elements.de/identity/api/v1/user/login", data=payload)
 	commit_data = r.json()
