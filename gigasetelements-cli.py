@@ -30,6 +30,7 @@ s = requests.Session()
 
 
 def configure() :
+	if args.warning == True : requests.packages.urllib3.disable_warnings()
 	if args.config == None : pass
 	else:
 		if os.path.exists(args.config) == False : print('[-]  File does not exist '+args.config) ; print ; exit()
@@ -37,7 +38,7 @@ def configure() :
 		config = ConfigParser.ConfigParser()
 		config.read(args.config)
 		if args.username == None : args.username = config.get("accounts", "username")
-		if args.username  == '' : args.username = None
+		if args.username == '' : args.username = None
 		if args.password == None : args.password = config.get("accounts", "password")
 		if args.password == '' : args.password = None
 		if args.modus == None : args.modus = config.get("options", "modus")
