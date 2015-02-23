@@ -21,7 +21,7 @@ Set alarm modus to HOME::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m home
   
-    Gigaset Elements - Command-line Interface
+    Gigaset Elements - Command Line Interface
 
     [-]  User logged in successfully.
     [-]  Authenticated as "first.last@domain.com" with language "nl"
@@ -32,7 +32,7 @@ Set alarm modus to AWAY and send PushBullet notification::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m away -n z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
   
-    Gigaset Elements - Command-line Interface
+    Gigaset Elements - Command Line Interface
 
     [-]  User logged in successfully.
     [-]  Authenticated as "first.last@domain.com" with language "nl"
@@ -44,7 +44,7 @@ Show system EVENTS::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -e 5
   
-    Gigaset Elements - Command-line Interface
+    Gigaset Elements - Command Line Interface
 
     [-]  User logged in successfully.
     [-]  Authenticated as "first.last@domain.com" with language "nl"
@@ -56,49 +56,23 @@ Show system EVENTS::
     [-]  02/21/2015 22:01:22 homecoming
     [-]  02/21/2015 22:01:18 open Frontdoor   
 
-Read options from CONFIG file:: (command-line parameters override configuration file)
+Show system STATUS::
 
-    $ ./gigasetelements-cli.py -c /etc/gigasetelements-cli.cfg
+    $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -s
   
-    Gigaset Elements - Command-line Interface
+    Gigaset Elements - Command Line Interface
 
-    [-]  Reading configuration from /etc/gigasetelements-cli.cfg
     [-]  User logged in successfully.
     [-]  Authenticated as "first.last@domain.com" with language "nl"
     [-]  Basestation F19B75Z4EDC9F128A1P8C79BFA3178A1
-    [-]  Modus set to HOME
-    [-]  PushBullet notification sent
+    [-]  Status ok
 
 
 Help
 -----
 
     $ ./gigasetelements-cli.py -h
- 
-	usage: gigasetelements-cli.py [-h] [-u USERNAME] [-p PASSWORD] [-c CONFIG]
-								  [-n NOTIFY] [-e EVENTS] [-m {home,away,custom}]
-								  [-s] [-w] [-v]
-
-	Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com
-
-	optional arguments:
-	  -h, --help            show this help message and exit
-	  -u USERNAME, --username USERNAME
-							username (email) in use with my.gigaset-elements.com
-	  -p PASSWORD, --password PASSWORD
-							password in use with my.gigaset-elements.com
-	  -c CONFIG, --config CONFIG
-							filename of configuration-file
-	  -n NOTIFY, --notify NOTIFY
-							pushbullet token
-	  -e EVENTS, --events EVENTS
-							show last <number> of events
-	  -m {home,away,custom}, --modus {home,away,custom}
-							set modus
-	  -s, --status          show system status
-	  -w, --warning         suppress authentication warnings
-	  -v, --version         show version
- 
+  
 	
 To do
 -----
