@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 _author_  = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.3'
+_version_ = '1.0.4'
 
 import gc ; gc.disable()
 import os
@@ -13,14 +13,14 @@ import ConfigParser
 from pushbullet import PushBullet
 
 
-parser = argparse.ArgumentParser(description='Gigaset Elements - Command Line Interface by dynasticorpheus@gmail.com')
+parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-u','--username', help='username (email) in use with my.gigaset-elements.com', required=False)
 parser.add_argument('-p','--password', help='password in use with my.gigaset-elements.com',required=False)
 parser.add_argument('-c','--config', help='filename of configuration-file',required=False)
 parser.add_argument('-n','--notify', help='pushbullet token',required=False)
 parser.add_argument('-e','--events', help='show last <number> of events',type=int, required=False)
 parser.add_argument('-m','--modus', help='set modus',required=False, choices=('home', 'away', 'custom'))
-parser.add_argument('-s','--status', help='show system status', action='store_true', required=False)
+parser.add_argument('-s','--status', help='show system / sensor status', action='store_true', required=False)
 parser.add_argument('-w','--warning', help='suppress authentication warnings', action='store_true', required=False)
 parser.add_argument('-v','--version', help='show version', action='version', version="%(prog)s version "+str(_version_))
 args = parser.parse_args()
@@ -103,14 +103,32 @@ def list_events() :
 
 
 def status() :
-	r6 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
-	status_data = r6.json()
-	print("[-]  Status "+status_data["home_state"])
+	r6 = s.get('https://api.gigaset-elements.de/api/v1/me/basestations')
+	sensor_data = r6.json()
+	print("[-] "), 
+	print(sensor_data[0]["friendly_name"]), ; print(sensor_data[0]["status"]),
+	print "| firmware", ; print(sensor_data[0]["firmware_status"])
+	for item in sensor_data[0]["sensors"]:
+		try:
+			print("[-] "), 
+			print item['friendly_name'], ; print item['status'],
+			print "| firmware", ; print item['firmware_status'],
+			if item['type'] != "is01" :  print "| battery", ; print item['battery']['state'],
+			if item['type'] == "ds02" :  print "| position", ; print item['position_status'],
+			print
+		except KeyError:
+			print
+			continue
+
+	r7 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
+	status_data = r7.json()
+	print("[-]  Home status "+status_data["home_state"])
 	return;
 
 
+
 print
-print "Gigaset Elements - Command Line Interface"
+print "Gigaset Elements - Command-line Interface"
 print
 
 configure()
