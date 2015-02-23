@@ -56,16 +56,18 @@ Show system EVENTS::
     [-]  02/21/2015 22:01:22 homecoming
     [-]  02/21/2015 22:01:18 open Frontdoor   
 
-Show system STATUS::
+Read options from CONFIG file:: (command-line parameters override configuration file)::
 
-    $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -s
+    $ ./gigasetelements-cli.py -c /etc/gigasetelements-cli.cfg
   
-    Gigaset Elements - Command Line Interface
+    Gigaset Elements - Command-line Interface
 
+    [-]  Reading configuration from /etc/gigasetelements-cli.cfg
     [-]  User logged in successfully.
     [-]  Authenticated as "first.last@domain.com" with language "nl"
     [-]  Basestation F19B75Z4EDC9F128A1P8C79BFA3178A1
-    [-]  Status ok
+    [-]  Modus set to HOME
+    [-]  PushBullet notification sent
 
 
 Help
