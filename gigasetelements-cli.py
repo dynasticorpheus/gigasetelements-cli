@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 
 _author_  = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.4'
+_version_ = '1.0.5'
+
+import imp
+try:
+    imp.find_module('requests')
+except ImportError:
+    print('requests module not found, try: pip install requests') ; exit()
+
+try:
+    imp.find_module('pushbullet')
+except ImportError:
+    print('pushbullet module not found, try: pip install pushbullet.py') ; exit()
+
 
 import gc ; gc.disable()
 import os
