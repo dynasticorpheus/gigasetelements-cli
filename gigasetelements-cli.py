@@ -83,6 +83,7 @@ def configure():
 
 def connect():
     global my_basestation
+    global basestation_data
     payload = {'password': args.password, 'email': args.username}
     r = s.post("https://im.gigaset-elements.de/identity/api/v1/user/login", data=payload)
     commit_data = r.json()
@@ -100,9 +101,11 @@ def connect():
         print(r2.text)
         r3 = s.get('https://api.gigaset-elements.de/api/v1/me/basestations')
         basestation_data = r3.json()
+        sensor_data = r3.json()
         my_basestation = basestation_data[0]["id"]
         print('[-]  Basestation'),
         print(my_basestation)
+        print("[-]  Current modus " + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
         print "[-]  Authentication error"
         print
@@ -143,26 +146,24 @@ def list_events():
 
 
 def status():
-    r6 = s.get('https://api.gigaset-elements.de/api/v1/me/basestations')
-    sensor_data = r6.json()
     print("[-] "),
-    print(sensor_data[0]["friendly_name"]),
-    print(sensor_data[0]["status"]),
+    print(basestation_data[0]["friendly_name"]),
+    print(basestation_data[0]["status"].upper()),
     print "| firmware",
-    print(sensor_data[0]["firmware_status"])
-    for item in sensor_data[0]["sensors"]:
+    print(basestation_data[0]["firmware_status"].upper())
+    for item in basestation_data[0]["sensors"]:
         try:
             print("[-] "),
             print item['friendly_name'],
-            print item['status'],
+            print item['status'].upper(),
             print "| firmware",
-            print item['firmware_status'],
+            print item['firmware_status'].upper(),
             if item['type'] != "is01":
                 print "| battery",
-                print item['battery']['state'],
+                print item['battery']['state'].upper(),
             if item['type'] == "ds02":
                 print "| position",
-                print item['position_status'],
+                print item['position_status'].upper(),
             print
         except KeyError:
             print
@@ -170,7 +171,7 @@ def status():
 
     r7 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
     status_data = r7.json()
-    print("[-]  Home status " + status_data["home_state"])
+    print("[-]  System status " + status_data["home_state"].upper())
     return
 
 
