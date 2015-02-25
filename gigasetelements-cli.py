@@ -174,32 +174,37 @@ def status():
     return
 
 
-print
-print "Gigaset Elements - Command-line Interface"
-print
+try:
+    print
+    print "Gigaset Elements - Command-line Interface"
+    print
 
-configure()
-connect()
-
-
-if args.modus is None:
-    pass
-else:
-    modus_switch()
-    print "[-]  Modus set to "+args.modus.upper()
-    pb_message()
+    configure()
+    connect()
 
 
-if args.status is not True:
-    pass
-else:
-    status()
+    if args.modus is None:
+        pass
+    else:
+        modus_switch()
+        print "[-]  Modus set to "+args.modus.upper()
+        pb_message()
 
 
-if args.events is None:
-    pass
-else:
-    list_events()
+    if args.status is not True:
+        pass
+    else:
+        status()
 
 
-print
+    if args.events is None:
+        pass
+    else:
+        list_events()
+
+
+    print
+
+except KeyboardInterrupt:
+    print("[-]  CTRL+C detected program halted")
+
