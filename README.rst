@@ -95,7 +95,7 @@ Donate
 A lot of time and effort goes into making gigasetelement-cli so if you like it you might want to consider buying me a beer :)
 
 .. image:: http://www.paypal.com/en_US/i/btn/x-click-but04.gif
-    :target: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=FETZ23LK5UH2J&item_number=gigasetelement%2dcli&currency_code=EUR 
+    :target: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=FETZ23LK5UH2J&item_number=gigasetelements%2dcli&currency_code=EUR 
     :alt: Donate via PayPal
 
 	
