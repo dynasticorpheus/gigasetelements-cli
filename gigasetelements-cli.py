@@ -34,7 +34,7 @@ parser.add_argument('-u', '--username', help='username (email) in use with my.gi
 parser.add_argument('-p', '--password', help='password in use with my.gigaset-elements.com', required=False)
 parser.add_argument('-n', '--notify', help='pushbullet token', required=False)
 parser.add_argument('-e', '--events', help='show last <number> of events', type=int, required=False)
-parser.add_argument('-d', '--date', help='filter events on begin date - end date (DD/MM/YY)', required=False, nargs=2)
+parser.add_argument('-d', '--date', help='filter events on begin date - end date (DD/MM/YYYY)', required=False, nargs=2)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--status', help='show system and sensor status', action='store_true', required=False)
@@ -137,15 +137,19 @@ def list_events():
     if args.filter is not None and args.date is None:
         print "[-]  Showing last " + str(args.events) + " " + str(args.filter) + " event(s)"
         r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=' + str(args.events) + '&group=' + str(args.filter))
+    if args.date is not None:
+        try:
+            from_ts = str(int(time.mktime(time.strptime(args.date[0], "%d/%m/%Y"))) * 1000)
+            to_ts = str(int(time.mktime(time.strptime(args.date[1], "%d/%m/%Y"))) * 1000)
+        except:
+            print("[-]  Date(s) provided not in DD/MM/YYYY format")
+            print
+            exit()
     if args.filter is None and args.date is not None:
         print "[-]  Showing event(s) between " + args.date[0] + " and " + args.date[1]
-        from_ts = str(int(time.mktime(time.strptime(args.date[0], "%d/%m/%Y"))) * 1000)
-        to_ts = str(int(time.mktime(time.strptime(args.date[1], "%d/%m/%Y"))) * 1000)
         r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
         print "[-]  Showing " + str(args.filter) + " event(s) between " + args.date[0] + " and " + args.date[1]
-        from_ts = str(int(time.mktime(time.strptime(args.date[0], "%d/%m/%Y"))) * 1000)
-        to_ts = str(int(time.mktime(time.strptime(args.date[1], "%d/%m/%Y"))) * 1000)
         r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
 
     event_data = r5.json()
