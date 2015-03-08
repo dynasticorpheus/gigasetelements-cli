@@ -99,7 +99,8 @@ def connect():
         my_basestation = basestation_data[0]["id"]
         print('[-]  Basestation'),
         print(my_basestation)
-        print("[-]  Current modus " + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+        if args.modus is None:
+            print("[-]  Current modus " + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
         print "[-]  Authentication error"
         print
@@ -110,6 +111,7 @@ def connect():
 def modus_switch():
     switch = {"intrusion_settings": {"active_mode": args.modus}}
     r4 = s.post('https://api.gigaset-elements.de/api/v1/me/basestations/' + my_basestation, data=json.dumps(switch))
+    print "[-]  Modus set from " + basestation_data[0]['intrusion_settings']['active_mode'].upper() + " to " + args.modus.upper()
     return
 
 
@@ -124,7 +126,8 @@ def pb_message():
             exit()
         from pushbullet import PushBullet
         pb = PushBullet(args.notify)
-        push = pb.push_note("Gigaset Elements", 'Modus set to ' + args.modus.upper())
+#        push = pb.push_note("Gigaset Elements", 'Modus set to ' + args.modus.upper())
+        push = pb.push_note("Gigaset Elements", 'Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
         print "[-]  PushBullet notification sent"
     return
 
@@ -206,7 +209,6 @@ try:
         pass
     else:
         modus_switch()
-        print "[-]  Modus set to " + args.modus.upper()
         pb_message()
 
     if args.status is not True:
