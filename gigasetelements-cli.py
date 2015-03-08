@@ -4,13 +4,7 @@ import imp
 try:
     imp.find_module('requests')
 except ImportError:
-    print('requests not found, try: pip install requests')
-    exit()
-
-try:
-    imp.find_module('pushbullet')
-except ImportError:
-    print('pushbullet not found, try: pip install pushbullet.py')
+    print('[-] requests not found, try: pip install requests')
     exit()
 
 
@@ -21,7 +15,6 @@ import argparse
 import json
 import requests
 import ConfigParser
-from pushbullet import PushBullet
 
 gc.disable()
 
@@ -124,6 +117,12 @@ def pb_message():
     if args.notify is None:
         pass
     else:
+        try:
+            imp.find_module('pushbullet')
+        except ImportError:
+            print('[-]  pushbullet not found, try: pip install pushbullet.py')
+            exit()
+        from pushbullet import PushBullet
         pb = PushBullet(args.notify)
         push = pb.push_note("Gigaset Elements", 'Modus set to ' + args.modus.upper())
         print "[-]  PushBullet notification sent"
