@@ -19,7 +19,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.7'
+_version_ = '1.0.8'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -30,7 +30,7 @@ parser.add_argument('-e', '--events', help='show last <number> of events', type=
 parser.add_argument('-d', '--date', help='filter events on begin date - end date (DD/MM/YYYY)', required=False, nargs=2)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
-parser.add_argument('-s', '--status', help='show system and sensor status', action='store_true', required=False)
+parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress authentication warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version="%(prog)s version " + str(_version_))
 args = parser.parse_args()
@@ -79,6 +79,7 @@ def configure():
 def connect():
     global my_basestation
     global basestation_data
+    global status_data
     payload = {'password': args.password, 'email': args.username}
     r = s.post("https://im.gigaset-elements.de/identity/api/v1/user/login", data=payload)
     commit_data = r.json()
@@ -99,8 +100,10 @@ def connect():
         my_basestation = basestation_data[0]["id"]
         print('[-]  Basestation'),
         print(my_basestation)
+        r7 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
+        status_data = r7.json()
         if args.modus is None:
-            print("[-]  Current modus " + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            print("[-]  System status " + status_data["home_state"].upper() + " | Modus " + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
         print "[-]  Authentication error"
         print
@@ -111,11 +114,11 @@ def connect():
 def modus_switch():
     switch = {"intrusion_settings": {"active_mode": args.modus}}
     r4 = s.post('https://api.gigaset-elements.de/api/v1/me/basestations/' + my_basestation, data=json.dumps(switch))
-    print "[-]  Modus set from " + basestation_data[0]['intrusion_settings']['active_mode'].upper() + " to " + args.modus.upper()
+    print "[-]  Status " + status_data["home_state"].upper() + " | Modus set from " + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
     return
 
 
-def pb_message():
+def pb_message(pbmsg):
     if args.notify is None:
         pass
     else:
@@ -126,8 +129,7 @@ def pb_message():
             exit()
         from pushbullet import PushBullet
         pb = PushBullet(args.notify)
-#        push = pb.push_note("Gigaset Elements", 'Modus set to ' + args.modus.upper())
-        push = pb.push_note("Gigaset Elements", 'Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+        push = pb.push_note("Gigaset Elements", pbmsg)
         print "[-]  PushBullet notification sent"
     return
 
@@ -190,10 +192,6 @@ def status():
         except KeyError:
             print
             continue
-
-    r7 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
-    status_data = r7.json()
-    print("[-]  System status " + status_data["home_state"].upper())
     return
 
 
@@ -209,12 +207,16 @@ try:
         pass
     else:
         modus_switch()
-        pb_message()
+        if args.status is not True:
+            pb_message('Status ' + status_data["home_state"].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+        else:
+            pass
 
     if args.status is not True:
         pass
     else:
         status()
+        pb_message('Status ' + status_data["home_state"].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
     if args.events is None and args.date is None:
         pass
