@@ -1,13 +1,13 @@
 # Sample configuration file for gigasetelements-cli
 #
-# On POSIX put this file to one of the following locations:
-# ~/.nzbget
-# /etc/nzbget.conf
-# /usr/etc/nzbget.conf
-# /usr/local/etc/nzbget.conf
-# /opt/etc/nzbget.conf
-
-
+# Note: command-line options override below values  
+#
+# On POSIX configuration file is automatically read from below locations:
+# ~/.gigasetelements-cli
+# /etc/gigasetelements-cli.conf
+# /usr/etc/gigasetelements-cli.conf
+# /usr/local/etc/gigasetelements-cli.conf
+# /opt/etc/gigasetelements-cli.conf
 
 [accounts]
 
@@ -19,6 +19,7 @@ password: mybigsecret
 
 # add token to enable pushbullet notification (optional)
 pbtoken: z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
+
 
 [options]
 

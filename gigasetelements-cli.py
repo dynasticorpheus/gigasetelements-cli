@@ -40,16 +40,23 @@ s = requests.Session()
 
 
 def configure():
-    if args.warning is True:
-        requests.packages.urllib3.disable_warnings()
     if args.config is None:
-        if os.path.exists('/etc/gigasetelements-cli.cfg') == True:
-            print("cfg found")
+        if os.path.exists('/opt/etc/gigasetelements-cli.conf') == True:
+            args.config = '/opt/etc/gigasetelements-cli.conf'
+        if os.path.exists('/usr/local/etc/gigasetelements-cli.conf') == True:
+            args.config = '/usr/local/etc/gigasetelements-cli.conf'
+        if os.path.exists('/usr/etc/gigasetelements-cli.conf') == True:
+            args.config = '/usr/etc/gigasetelements-cli.conf'
+        if os.path.exists('/etc/gigasetelements-cli.conf') == True:
+            args.config = '/etc/gigasetelements-cli.conf'
+        if os.path.exists(os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')) == True:
+            args.config = os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')
     else:
         if os.path.exists(args.config) == False:
             print('[-]  File does not exist ' + args.config)
             print
             exit()
+    if args.config is not None:
         print('[-]  Reading configuration from ' + args.config)
         config = ConfigParser.ConfigParser()
         config.read(args.config)
@@ -75,9 +82,15 @@ def configure():
             if config.getboolean("options", "nowarning"):
                 requests.packages.urllib3.disable_warnings()
         return
+    if None in (args.username, args.password):
+        print "[-] Username and/or password missing"
+        print
+        exit()
 
 
 def connect():
+    if args.warning is True:
+        requests.packages.urllib3.disable_warnings()
     global my_basestation
     global basestation_data
     global status_data
