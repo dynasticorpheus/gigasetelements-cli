@@ -19,7 +19,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.8'
+_version_ = '1.0.9'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -31,7 +31,7 @@ parser.add_argument('-d', '--date', help='filter events on begin date - end date
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
-parser.add_argument('-w', '--warning', help='suppress authentication warnings', action='store_true', required=False)
+parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version="%(prog)s version " + str(_version_))
 args = parser.parse_args()
 
@@ -43,7 +43,8 @@ def configure():
     if args.warning is True:
         requests.packages.urllib3.disable_warnings()
     if args.config is None:
-        pass
+        if os.path.exists('/etc/gigasetelements-cli.cfg') == True:
+            print("cfg found")
     else:
         if os.path.exists(args.config) == False:
             print('[-]  File does not exist ' + args.config)
