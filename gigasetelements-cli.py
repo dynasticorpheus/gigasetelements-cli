@@ -5,11 +5,12 @@ try:
     imp.find_module('requests')
 except ImportError:
     print('[-] requests not found, try: pip install requests')
-    exit()
+    sys.exit()
 
 
 import gc
 import os
+import sys
 import time
 import argparse
 import json
@@ -19,7 +20,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.0.9'
+_version_ = '1.1.0'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -31,8 +32,9 @@ parser.add_argument('-d', '--date', help='filter events on begin date - end date
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
+parser.add_argument('-i', '--ignore', help='ignore configuration-file at default locations', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
-parser.add_argument('-v', '--version', help='show version', action='version', version="%(prog)s version " + str(_version_))
+parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_version_))
 args = parser.parse_args()
 
 
@@ -51,84 +53,84 @@ def configure():
             args.config = '/etc/gigasetelements-cli.conf'
         if os.path.exists(os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')) == True:
             args.config = os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')
+        if args.ignore is True:
+            args.config = None
     else:
         if os.path.exists(args.config) == False:
-            print('[-]  File does not exist ' + args.config)
+            print('[-] File does not exist ' + args.config)
             print
-            exit()
+            sys.exit()
     if args.config is not None:
-        print('[-]  Reading configuration from ' + args.config)
+        print('[-] Reading configuration from ' + args.config)
         config = ConfigParser.ConfigParser()
         config.read(args.config)
         if args.username is None:
-            args.username = config.get("accounts", "username")
+            args.username = config.get('accounts', 'username')
         if args.username == '':
             args.username = None
         if args.password is None:
-            args.password = config.get("accounts", "password")
+            args.password = config.get('accounts', 'password')
         if args.password == '':
             args.password = None
         if args.modus is None:
-            args.modus = config.get("options", "modus")
+            args.modus = config.get('options', 'modus')
         if args.modus == '':
             args.modus = None
         if args.notify is None:
-            args.notify = config.get("accounts", "pbtoken")
+            args.notify = config.get('accounts', 'pbtoken')
         if args.notify == '':
             args.notify = None
         if args.warning is True:
             requests.packages.urllib3.disable_warnings()
         else:
-            if config.getboolean("options", "nowarning"):
+            if config.getboolean('options', 'nowarning'):
                 requests.packages.urllib3.disable_warnings()
         return
     if None in (args.username, args.password):
-        print "[-] Username and/or password missing"
+        print '[-] Username and/or password missing'
         print
-        exit()
+        sys.exit()
+    if args.warning is True:
+        requests.packages.urllib3.disable_warnings()
 
 
 def connect():
-    if args.warning is True:
-        requests.packages.urllib3.disable_warnings()
     global my_basestation
     global basestation_data
     global status_data
     payload = {'password': args.password, 'email': args.username}
-    r = s.post("https://im.gigaset-elements.de/identity/api/v1/user/login", data=payload)
+    try:
+        r = s.post('https://im.gigaset-elements.de/identity/api/v1/user/login', data=payload)
+    except requests.exceptions.RequestException as e:
+        print '[-] ' + str(e.message)
+        sys.exit()
     commit_data = r.json()
-    if(r == ''):
-        print "[-] Connection error"
-        print
-        exit()
-
-    elif(commit_data["status"] == 'ok'):
-        print('[-] '),
-        print(commit_data["message"])
-        my_reefssid = commit_data["reefssid"]
+    if r.status_code == requests.codes.ok:
+        print('[-] ' + commit_data['message'])
         r2 = s.get('https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset')
-        print('[-] '),
-        print(r2.text)
+        if r2.status_code != requests.codes.ok:
+            commit_data = r2.json()
+            print('[-] ' + str(r2.status_code) + ' ' + commit_data['error']['message'])
+            sys.exit()
+        print('[-] ' + r2.text)
         r3 = s.get('https://api.gigaset-elements.de/api/v1/me/basestations')
         basestation_data = r3.json()
-        my_basestation = basestation_data[0]["id"]
-        print('[-]  Basestation'),
-        print(my_basestation)
+        my_basestation = basestation_data[0]['id']
+        print('[-] Basestation ' + my_basestation)
         r7 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
         status_data = r7.json()
         if args.modus is None:
-            print("[-]  System status " + status_data["home_state"].upper() + " | Modus " + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            print('[-] System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
-        print "[-]  Authentication error"
-        print
-        exit()
+        print('[-] ' + str(r.status_code) + ' ' + commit_data['message'])
+        sys.exit()
         return
 
 
 def modus_switch():
-    switch = {"intrusion_settings": {"active_mode": args.modus}}
+    switch = {'intrusion_settings': {'active_mode': args.modus}}
     r4 = s.post('https://api.gigaset-elements.de/api/v1/me/basestations/' + my_basestation, data=json.dumps(switch))
-    print "[-]  Status " + status_data["home_state"].upper() + " | Modus set from " + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
+    print '[-] Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
     return
 
 
@@ -139,69 +141,55 @@ def pb_message(pbmsg):
         try:
             imp.find_module('pushbullet')
         except ImportError:
-            print('[-]  pushbullet not found, try: pip install pushbullet.py')
-            exit()
+            print('[-] pushbullet not found, try: pip install pushbullet.py')
+            sys.exit()
         from pushbullet import PushBullet
         pb = PushBullet(args.notify)
-        push = pb.push_note("Gigaset Elements", pbmsg)
-        print "[-]  PushBullet notification sent"
+        push = pb.push_note('Gigaset Elements', pbmsg)
+        print '[-] PushBullet notification sent'
     return
 
 
 def list_events():
     if args.filter is None and args.date is None:
-        print "[-]  Showing last " + str(args.events) + " event(s)"
+        print '[-] Showing last ' + str(args.events) + ' event(s)'
         r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
-        print "[-]  Showing last " + str(args.events) + " " + str(args.filter) + " event(s)"
+        print '[-] Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)'
         r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
-            from_ts = str(int(time.mktime(time.strptime(args.date[0], "%d/%m/%Y"))) * 1000)
-            to_ts = str(int(time.mktime(time.strptime(args.date[1], "%d/%m/%Y"))) * 1000)
+            from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
+            to_ts = str(int(time.mktime(time.strptime(args.date[1], '%d/%m/%Y'))) * 1000)
         except:
-            print("[-]  Date(s) provided not in DD/MM/YYYY format")
+            print('[-] Date(s) provided not in DD/MM/YYYY format')
             print
-            exit()
+            sys.exit()
     if args.filter is None and args.date is not None:
-        print "[-]  Showing event(s) between " + args.date[0] + " and " + args.date[1]
+        print '[-] Showing event(s) between ' + args.date[0] + ' and ' + args.date[1]
         r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
-        print "[-]  Showing " + str(args.filter) + " event(s) between " + args.date[0] + " and " + args.date[1]
+        print '[-] Showing ' + str(args.filter).upper() + ' event(s) between ' + args.date[0] + ' and ' + args.date[1]
         r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
 
     event_data = r5.json()
-    for item in event_data["events"]:
+    for item in event_data['events']:
         try:
-            print("[-] "),
-            print(time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))),
-            print item['type'],
-            print item['o']['friendly_name']
+            print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
         except KeyError:
-            print
             continue
     return
 
 
 def status():
-    print("[-] "),
-    print(basestation_data[0]["friendly_name"]),
-    print(basestation_data[0]["status"].upper()),
-    print "| firmware",
-    print(basestation_data[0]["firmware_status"].upper())
-    for item in basestation_data[0]["sensors"]:
+    print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + basestation_data[0]['status'].upper() + ' | firmware ' + basestation_data[0]['firmware_status'].upper()
+    for item in basestation_data[0]['sensors']:
         try:
-            print("[-] "),
-            print item['friendly_name'],
-            print item['status'].upper(),
-            print "| firmware",
-            print item['firmware_status'].upper(),
-            if item['type'] != "is01":
-                print "| battery",
-                print item['battery']['state'].upper(),
-            if item['type'] == "ds02":
-                print "| position",
-                print item['position_status'].upper(),
+            print('[-] ') + item['friendly_name'] + ' ' + item['status'].upper() + '| firmware ' + item['firmware_status'].upper(),
+            if item['type'] != 'is01':
+                print '| battery ' + item['battery']['state'].upper(),
+            if item['type'] == 'ds02':
+                print '| position ' + item['position_status'].upper(),
             print
         except KeyError:
             print
@@ -211,7 +199,7 @@ def status():
 
 try:
     print
-    print "Gigaset Elements - Command-line Interface"
+    print 'Gigaset Elements - Command-line Interface'
     print
 
     configure()
@@ -222,7 +210,7 @@ try:
     else:
         modus_switch()
         if args.status is not True:
-            pb_message('Status ' + status_data["home_state"].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+            pb_message('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
         else:
             pass
 
@@ -230,7 +218,7 @@ try:
         pass
     else:
         status()
-        pb_message('Status ' + status_data["home_state"].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+        pb_message('Status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
     if args.events is None and args.date is None:
         pass
@@ -240,4 +228,4 @@ try:
     print
 
 except KeyboardInterrupt:
-    print("[-]  CTRL+C detected program halted")
+    print('[-] CTRL+C detected program halted')
