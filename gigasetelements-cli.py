@@ -152,10 +152,8 @@ def pb_message(pbmsg):
             pb = PushBullet(args.notify)
         except pushbullet.errors.InvalidKeyError:
             print('[-] Pushbullet notification not sent due to incorrect token')
-            sys.exit()
         except pushbullet.errors.PushbulletError:
             print('[-] Pushbullet notification not sent due to unknown error')
-            sys.exit()
         else:
             push = pb.push_note('Gigaset Elements', pbmsg)
             print '[-] PushBullet notification sent'
