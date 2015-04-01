@@ -40,6 +40,10 @@ args = parser.parse_args()
 
 s = requests.Session()
 
+url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
+url_events = 'https://api.gigaset-elements.de/api/v1/me/events'
+url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
+url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 
 def configure():
     if args.config is None:
@@ -100,25 +104,25 @@ def connect():
     global status_data
     payload = {'password': args.password, 'email': args.username}
     try:
-        r = s.post('https://im.gigaset-elements.de/identity/api/v1/user/login', data=payload)
+        r = s.post(url_identity, data=payload)
     except requests.exceptions.RequestException as e:
         print '[-] ' + str(e.message)
         sys.exit()
     commit_data = r.json()
     if r.status_code == requests.codes.ok:
         print('[-] ' + commit_data['message'])
-        r2 = s.get('https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset')
-        if r2.status_code != requests.codes.ok:
-            commit_data = r2.json()
-            print('[-] ' + str(r2.status_code) + ' ' + commit_data['error']['message'])
+        r = s.get(url_auth)
+        if r.status_code != requests.codes.ok:
+            commit_data = r.json()
+            print('[-] ' + str(r.status_code) + ' ' + commit_data['error']['message'])
             sys.exit()
-        print('[-] ' + r2.text)
-        r3 = s.get('https://api.gigaset-elements.de/api/v1/me/basestations')
-        basestation_data = r3.json()
+        print('[-] ' + r.text)
+        r = s.get(url_base)
+        basestation_data = r.json()
         my_basestation = basestation_data[0]['id']
         print('[-] Basestation ' + my_basestation)
-        r7 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=1')
-        status_data = r7.json()
+        r = s.get(url_events + '?limit=1')
+        status_data = r.json()
         if args.modus is None:
             print('[-] System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
@@ -129,7 +133,7 @@ def connect():
 
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
-    r4 = s.post('https://api.gigaset-elements.de/api/v1/me/basestations/' + my_basestation, data=json.dumps(switch))
+    r = s.post(url_base + '/' + my_basestation, data=json.dumps(switch))
     print '[-] Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
     return
 
@@ -153,10 +157,10 @@ def pb_message(pbmsg):
 def list_events():
     if args.filter is None and args.date is None:
         print '[-] Showing last ' + str(args.events) + ' event(s)'
-        r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=' + str(args.events))
+        r = s.get(url_events + '?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
         print '[-] Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)'
-        r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?limit=' + str(args.events) + '&group=' + str(args.filter))
+        r = s.get(url_events +'?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
@@ -167,12 +171,11 @@ def list_events():
             sys.exit()
     if args.filter is None and args.date is not None:
         print '[-] Showing event(s) between ' + args.date[0] + ' and ' + args.date[1]
-        r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
+        r = s.get(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
         print '[-] Showing ' + str(args.filter).upper() + ' event(s) between ' + args.date[0] + ' and ' + args.date[1]
-        r5 = s.get('https://api.gigaset-elements.de/api/v1/me/events?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
-
-    event_data = r5.json()
+        r = s.get(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
+    event_data = r.json()
     for item in event_data['events']:
         try:
             print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
