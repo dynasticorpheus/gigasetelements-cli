@@ -225,7 +225,9 @@ try:
         status()
         pb_message('Status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
-    if args.events is not None and args.date is not None:
+    if args.events is None and args.date is None:
+        pass
+    else:
         list_events()
 
     print
