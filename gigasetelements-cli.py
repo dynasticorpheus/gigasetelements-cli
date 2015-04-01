@@ -140,18 +140,25 @@ def modus_switch():
 
 
 def pb_message(pbmsg):
-    if args.notify is None:
-        pass
-    else:
+    if args.notify is not None:
         try:
             imp.find_module('pushbullet')
         except ImportError:
             print('[-] pushbullet not found, try: pip install pushbullet.py')
             sys.exit()
+        import pushbullet
         from pushbullet import PushBullet
-        pb = PushBullet(args.notify)
-        push = pb.push_note('Gigaset Elements', pbmsg)
-        print '[-] PushBullet notification sent'
+        try:
+            pb = PushBullet(args.notify)
+        except pushbullet.errors.InvalidKeyError:
+            print('[-] Pushbullet notification not sent due to incorrect token')
+            sys.exit()
+        except pushbullet.errors.PushbulletError:
+            print('[-] Pushbullet notification not sent due to unknown error')
+            sys.exit()
+        else:
+            push = pb.push_note('Gigaset Elements', pbmsg)
+            print '[-] PushBullet notification sent'
     return
 
 
