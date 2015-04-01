@@ -45,19 +45,20 @@ url_events = 'https://api.gigaset-elements.de/api/v1/me/events'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 
+
 def configure():
     if args.config is None:
-        if os.path.exists('/opt/etc/gigasetelements-cli.conf') == True:
+        if os.path.exists('/opt/etc/gigasetelements-cli.conf'):
             args.config = '/opt/etc/gigasetelements-cli.conf'
-        if os.path.exists('/usr/local/etc/gigasetelements-cli.conf') == True:
+        if os.path.exists('/usr/local/etc/gigasetelements-cli.conf'):
             args.config = '/usr/local/etc/gigasetelements-cli.conf'
-        if os.path.exists('/usr/etc/gigasetelements-cli.conf') == True:
+        if os.path.exists('/usr/etc/gigasetelements-cli.conf'):
             args.config = '/usr/etc/gigasetelements-cli.conf'
-        if os.path.exists('/etc/gigasetelements-cli.conf') == True:
+        if os.path.exists('/etc/gigasetelements-cli.conf'):
             args.config = '/etc/gigasetelements-cli.conf'
-        if os.path.exists(os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')) == True:
+        if os.path.exists(os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')):
             args.config = os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')
-        if args.ignore is True:
+        if args.ignore:
             args.config = None
     else:
         if os.path.exists(args.config) == False:
@@ -84,7 +85,7 @@ def configure():
             args.notify = config.get('accounts', 'pbtoken')
         if args.notify == '':
             args.notify = None
-        if args.warning is True:
+        if args.warning:
             requests.packages.urllib3.disable_warnings()
         else:
             if config.getboolean('options', 'nowarning'):
@@ -94,7 +95,7 @@ def configure():
         print '[-] Username and/or password missing'
         print
         sys.exit()
-    if args.warning is True:
+    if args.warning:
         requests.packages.urllib3.disable_warnings()
 
 
@@ -160,7 +161,7 @@ def list_events():
         r = s.get(url_events + '?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
         print '[-] Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)'
-        r = s.get(url_events +'?limit=' + str(args.events) + '&group=' + str(args.filter))
+        r = s.get(url_events + '?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
@@ -208,24 +209,16 @@ try:
     configure()
     connect()
 
-    if args.modus is None:
-        pass
-    else:
+    if args.modus is not None:
         modus_switch()
         if args.status is not True:
             pb_message('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
-        else:
-            pass
 
-    if args.status is not True:
-        pass
-    else:
+    if args.status:
         status()
         pb_message('Status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
-    if args.events is None and args.date is None:
-        pass
-    else:
+    if (args.events, args.date) is not None:
         list_events()
 
     print
