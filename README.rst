@@ -1,5 +1,5 @@
 Gigaset Elements API command-line interface
-==========
+===========================================
 
 gigasetelements-cli is a python based program which allows you to control your Gigaset Elements home security system.
 It comes with an easy to use CLI (command-line interface) suitable for direct use or cron jobs.
@@ -9,7 +9,7 @@ It comes with an easy to use CLI (command-line interface) suitable for direct us
 
 
 Installation
------
+------------
 No installation required but it does depend on the requests and pushbullet.py library
 
 pip install requests pushbullet.py
@@ -20,7 +20,7 @@ Usage
 Set alarm modus to HOME::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m home
-  
+
     Gigaset Elements - Command Line Interface
 
     [-]  User logged in successfully.
@@ -31,7 +31,7 @@ Set alarm modus to HOME::
 Set alarm modus to AWAY and send PushBullet notification::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m away -n z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
-  
+
     Gigaset Elements - Command Line Interface
 
     [-]  User logged in successfully.
@@ -43,31 +43,32 @@ Set alarm modus to AWAY and send PushBullet notification::
 Show system EVENTS::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -e 5
-  
+
     Gigaset Elements - Command Line Interface
 
     [-]  User logged in successfully.
     [-]  Authenticated as "first.last@domain.com" with language "nl"
     [-]  Basestation F19B75Z4EDC9F128A1P8C79BFA3178A1
     [-]  Showing last 5 event(s)
-    [-]  02/21/2015 22:03:01 movement Livingroom  
+    [-]  02/21/2015 22:03:01 movement Livingroom
     [-]  02/21/2015 22:02:25 close Frontdoor
     [-]  02/21/2015 22:01:24 movement Hallway
     [-]  02/21/2015 22:01:22 homecoming
-    [-]  02/21/2015 22:01:18 open Frontdoor   
+    [-]  02/21/2015 22:01:18 open Frontdoor
 
 Read options from CONFIG file:: (command-line parameters override configuration file)::
 
-On POSIX configuration file is automatically read from below locations: (use -i to ignore)
+ On POSIX configuration file is automatically read from below locations: (use -i to ignore)
 
-~/.gigasetelements-cli
-/etc/gigasetelements-cli.conf
-/usr/etc/gigasetelements-cli.conf
-/usr/local/etc/gigasetelements-cli.conf
-/opt/etc/gigasetelements-cli.conf
+    ~/.gigasetelements-cli
+    /etc/gigasetelements-cli.conf
+    /usr/etc/gigasetelements-cli.conf
+    /usr/local/etc/gigasetelements-cli.conf
+    /opt/etc/gigasetelements-cli.conf
+
 
     $ ./gigasetelements-cli.py -c /etc/gigasetelements-cli.conf
-  
+
     Gigaset Elements - Command-line Interface
 
     [-]  Reading configuration from /etc/gigasetelements-cli.conf
@@ -82,8 +83,8 @@ Help
 -----
 
     $ ./gigasetelements-cli.py -h
-  
-	
+
+
 To do
 -----
 Improve authentication/connection error handling
@@ -99,14 +100,14 @@ Been ages since I have coded and python is new for me so in other words be kind 
 
 
 Donate
------
+------
 A lot of time and effort goes into making gigasetelements-cli so if you like it you might want to consider buying me a beer :)
 
 .. image:: http://www.paypal.com/en_US/i/btn/x-click-but04.gif
-    :target: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=FETZ23LK5UH2J&item_number=gigasetelements%2dcli&currency_code=EUR 
+    :target: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=FETZ23LK5UH2J&item_number=gigasetelements%2dcli&currency_code=EUR
     :alt: Donate via PayPal
 
-	
+
 License
 -------
 GPL2
