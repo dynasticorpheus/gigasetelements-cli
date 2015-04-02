@@ -60,11 +60,11 @@ Read options from CONFIG file:: (command-line parameters override configuration 
 
 On POSIX configuration file is automatically read from below locations: (use -i to ignore)
 
- ~/.gigasetelements-cli
- /etc/gigasetelements-cli.conf
- /usr/etc/gigasetelements-cli.conf
- /usr/local/etc/gigasetelements-cli.conf
- /opt/etc/gigasetelements-cli.conf
+~/.gigasetelements-cli
+/etc/gigasetelements-cli.conf
+/usr/etc/gigasetelements-cli.conf
+/usr/local/etc/gigasetelements-cli.conf
+/opt/etc/gigasetelements-cli.conf
 
     $ ./gigasetelements-cli.py -c /etc/gigasetelements-cli.conf
   
