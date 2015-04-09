@@ -32,7 +32,7 @@ parser.add_argument('-d', '--date', help='filter events on begin date - end date
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
-parser.add_argument('-i', '--ignore', help='ignore configuration-file at default locations', action='store_true', required=False)
+parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_version_))
 args = parser.parse_args()
@@ -114,8 +114,7 @@ def connect():
         print('[-] ' + commit_data['message'])
         r = s.get(url_auth)
         if r.status_code != requests.codes.ok:
-            commit_data = r.json()
-            print('[-] ' + str(r.status_code) + ' ' + commit_data['error']['message'])
+            print('[-] HTTP error ' + str(r.status_code))
             sys.exit()
         print('[-] ' + r.text)
         r = s.get(url_base)
