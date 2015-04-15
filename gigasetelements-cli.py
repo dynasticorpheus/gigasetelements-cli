@@ -159,7 +159,6 @@ def connect():
         status_data = r.json()
         if args.modus is None:
             log('System status ' + color(status_data['home_state']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
-#            log('System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
         log(str(r.status_code) + ' ' + commit_data['message'], 3)
         sys.exit()
@@ -196,24 +195,24 @@ def pb_message(pbmsg):
 
 def list_events():
     if args.filter is None and args.date is None:
-        print '[-] Showing last ' + str(args.events) + ' event(s)'
+        log('Showing last ' + str(args.events) + ' event(s)')
         r = s.get(url_events + '?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
-        print '[-] Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)'
+        log('Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)')
         r = s.get(url_events + '?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
             to_ts = str(int(time.mktime(time.strptime(args.date[1], '%d/%m/%Y'))) * 1000)
         except:
-            print('[-] Date(s) provided not in DD/MM/YYYY format')
+            log('Date(s) not provided in DD/MM/YYYY format', 3)
             print
             sys.exit()
     if args.filter is None and args.date is not None:
-        print '[-] Showing event(s) between ' + args.date[0] + ' and ' + args.date[1]
+        log('Showing event(s) between ' + args.date[0] + ' and ' + args.date[1])
         r = s.get(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
-        print '[-] Showing ' + str(args.filter).upper() + ' event(s) between ' + args.date[0] + ' and ' + args.date[1]
+        log('Showing ' + str(args.filter).upper() + ' event(s) between ' + args.date[0] + ' and ' + args.date[1])
         r = s.get(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     event_data = r.json()
     for item in event_data['events']:
