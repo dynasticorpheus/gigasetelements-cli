@@ -20,7 +20,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.1.0'
+_version_ = '1.1.1'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -33,6 +33,7 @@ parser.add_argument('-f', '--filter', help='filter events on type', required=Fal
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
+parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_version_))
 args = parser.parse_args()
@@ -44,6 +45,30 @@ url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_events = 'https://api.gigaset-elements.de/api/v1/me/events'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
+url_test = 'http://httpbin.org/status/503'
+
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARN = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def log(str, type=0):
+    if type == 0:
+        print '[-] ' + str
+    if type == 1:
+        print bcolors.OKGREEN + '[-] ' + str + bcolors.ENDC
+    if type == 2:
+        print bcolors.WARN + '[-] ' + str + bcolors.ENDC
+    if type == 3:
+        print bcolors.FAIL + '[-] ' + str + bcolors.ENDC
+    return
 
 
 def configure():
@@ -62,11 +87,11 @@ def configure():
             args.config = None
     else:
         if os.path.exists(args.config) == False:
-            print('[-] File does not exist ' + args.config)
+            log('File does not exist ' + args.config, 3)
             print
             sys.exit()
     if args.config is not None:
-        print('[-] Reading configuration from ' + args.config)
+        log('Reading configuration from ' + args.config)
         config = ConfigParser.ConfigParser()
         config.read(args.config)
         if args.username is None:
@@ -92,7 +117,7 @@ def configure():
                 requests.packages.urllib3.disable_warnings()
         return
     if None in (args.username, args.password):
-        print '[-] Username and/or password missing'
+        log('Username and/or password missing', 3)
         print
         sys.exit()
     if args.warning:
@@ -107,26 +132,26 @@ def connect():
     try:
         r = s.post(url_identity, data=payload)
     except requests.exceptions.RequestException as e:
-        print '[-] ' + str(e.message)
+        log(str(e.message))
         sys.exit()
     commit_data = r.json()
     if r.status_code == requests.codes.ok:
-        print('[-] ' + commit_data['message'])
+        log(commit_data['message'])
         r = s.get(url_auth)
         if r.status_code != requests.codes.ok:
-            print('[-] HTTP error ' + str(r.status_code))
+            log('HTTP error ' + str(r.status_code), 3)
             sys.exit()
-        print('[-] ' + r.text)
+        log(r.text)
         r = s.get(url_base)
         basestation_data = r.json()
         my_basestation = basestation_data[0]['id']
-        print('[-] Basestation ' + my_basestation)
+        log('Basestation ' + my_basestation)
         r = s.get(url_events + '?limit=1')
         status_data = r.json()
         if args.modus is None:
-            print('[-] System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            log('System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
-        print('[-] ' + str(r.status_code) + ' ' + commit_data['message'])
+        log(str(r.status_code) + ' ' + commit_data['message'], 3)
         sys.exit()
         return
 
@@ -134,28 +159,28 @@ def connect():
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     r = s.post(url_base + '/' + my_basestation, data=json.dumps(switch))
-    print '[-] Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
+    log('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
     return
 
 
 def pb_message(pbmsg):
-    if args.notify is not None:
+    if args.notify is not None and args.quiet is not True:
         try:
             imp.find_module('pushbullet')
         except ImportError:
-            print('[-] pushbullet not found, try: pip install pushbullet.py')
+            log('pushbullet not found, try: pip install pushbullet.py', 3)
             sys.exit()
         import pushbullet
         from pushbullet import PushBullet
         try:
             pb = PushBullet(args.notify)
         except pushbullet.errors.InvalidKeyError:
-            print('[-] Pushbullet notification not sent due to incorrect token')
+            log('Pushbullet notification not sent due to incorrect token', 2)
         except pushbullet.errors.PushbulletError:
-            print('[-] Pushbullet notification not sent due to unknown error')
+            log('Pushbullet notification not sent due to unknown error', 2)
         else:
             push = pb.push_note('Gigaset Elements', pbmsg)
-            print '[-] PushBullet notification sent'
+            log('PushBullet notification sent')
     return
 
 
@@ -190,14 +215,35 @@ def list_events():
 
 
 def status():
-    print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + basestation_data[0]['status'].upper() + ' | firmware ' + basestation_data[0]['firmware_status'].upper()
+    if basestation_data[0]['status'] == 'online':
+        basestation_data[0]['status'] = bcolors.OKGREEN + basestation_data[0]['status'].upper() + bcolors.ENDC
+    else:
+        basestation_data[0]['status'] = bcolors.FAIL + basestation_data[0]['status'].upper() + bcolors.ENDC
+    if basestation_data[0]['firmware_status'] == 'up_to_date':
+        basestation_data[0]['firmware_status'] = bcolors.OKGREEN + basestation_data[0]['firmware_status'].upper() + bcolors.ENDC
+    else:
+        basestation_data[0]['firmware_status'] = bcolors.FAIL + basestation_data[0]['firmware_status'].upper() + bcolors.ENDC
+    print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + basestation_data[0]['status'] + ' | firmware ' + basestation_data[0]['firmware_status']
     for item in basestation_data[0]['sensors']:
         try:
-            print('[-] ') + item['friendly_name'] + ' ' + item['status'].upper() + '| firmware ' + item['firmware_status'].upper(),
+            if item['firmware_status'] == 'up_to_date':
+                if item['status'] == 'online':
+                    item['status'] = bcolors.OKGREEN + item['status'].upper() + bcolors.ENDC
+                else:
+                    item['status'] = bcolors.FAIL + item['status'].upper() + bcolors.ENDC
+                print('[-] ') + item['friendly_name'] + ' ' + item['status'] + '| firmware ' + bcolors.OKGREEN + item['firmware_status'].upper() + bcolors.ENDC,
+            else:
+                print('[-] ') + item['friendly_name'] + ' ' + item['status'] + '| firmware ' + bcolors.FAIL + item['firmware_status'].upper() + bcolors.ENDC,
             if item['type'] != 'is01':
-                print '| battery ' + item['battery']['state'].upper(),
+                if item['battery']['state'] == 'ok':
+                    print '| battery ' + bcolors.OKGREEN + item['battery']['state'].upper() + bcolors.ENDC,
+                else:
+                    print '| battery ' + bcolors.FAIL + item['battery']['state'].upper() + bcolors.ENDC,
             if item['type'] == 'ds02':
-                print '| position ' + item['position_status'].upper(),
+                if item['position_status'] == 'closed':
+                    print '| position ' + bcolors.OKGREEN + item['position_status'].upper() + bcolors.ENDC,
+                else:
+                    print '| position ' + bcolors.FAIL + item['position_status'].upper() + bcolors.ENDC,
             print
         except KeyError:
             print
@@ -230,4 +276,4 @@ try:
     print
 
 except KeyboardInterrupt:
-    print('[-] CTRL+C detected program halted')
+    log('CTRL+C detected program halted', 3)
