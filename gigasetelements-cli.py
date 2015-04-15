@@ -71,6 +71,15 @@ def log(str, type=0):
     return
 
 
+def color(str):
+    normal = ['ok', 'online', 'closed', 'up_to_date']
+    if str in normal:
+        str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
+    else:
+        str = bcolors.FAIL + str.upper() + bcolors.ENDC
+    return str
+
+
 def configure():
     if args.config is None:
         if os.path.exists('/opt/etc/gigasetelements-cli.conf'):
@@ -149,7 +158,8 @@ def connect():
         r = s.get(url_events + '?limit=1')
         status_data = r.json()
         if args.modus is None:
-            log('System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            log('System status ' + color(status_data['home_state']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+#            log('System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     else:
         log(str(r.status_code) + ' ' + commit_data['message'], 3)
         sys.exit()
@@ -215,35 +225,14 @@ def list_events():
 
 
 def status():
-    if basestation_data[0]['status'] == 'online':
-        basestation_data[0]['status'] = bcolors.OKGREEN + basestation_data[0]['status'].upper() + bcolors.ENDC
-    else:
-        basestation_data[0]['status'] = bcolors.FAIL + basestation_data[0]['status'].upper() + bcolors.ENDC
-    if basestation_data[0]['firmware_status'] == 'up_to_date':
-        basestation_data[0]['firmware_status'] = bcolors.OKGREEN + basestation_data[0]['firmware_status'].upper() + bcolors.ENDC
-    else:
-        basestation_data[0]['firmware_status'] = bcolors.FAIL + basestation_data[0]['firmware_status'].upper() + bcolors.ENDC
-    print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + basestation_data[0]['status'] + ' | firmware ' + basestation_data[0]['firmware_status']
+    print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
     for item in basestation_data[0]['sensors']:
         try:
-            if item['firmware_status'] == 'up_to_date':
-                if item['status'] == 'online':
-                    item['status'] = bcolors.OKGREEN + item['status'].upper() + bcolors.ENDC
-                else:
-                    item['status'] = bcolors.FAIL + item['status'].upper() + bcolors.ENDC
-                print('[-] ') + item['friendly_name'] + ' ' + item['status'] + '| firmware ' + bcolors.OKGREEN + item['firmware_status'].upper() + bcolors.ENDC,
-            else:
-                print('[-] ') + item['friendly_name'] + ' ' + item['status'] + '| firmware ' + bcolors.FAIL + item['firmware_status'].upper() + bcolors.ENDC,
+            print('[-] ') + item['friendly_name'] + ' ' + color(item['status']) + '| firmware ' + color(item['firmware_status']),
             if item['type'] != 'is01':
-                if item['battery']['state'] == 'ok':
-                    print '| battery ' + bcolors.OKGREEN + item['battery']['state'].upper() + bcolors.ENDC,
-                else:
-                    print '| battery ' + bcolors.FAIL + item['battery']['state'].upper() + bcolors.ENDC,
+                print '| battery ' + color(item['battery']['state']),
             if item['type'] == 'ds02':
-                if item['position_status'] == 'closed':
-                    print '| position ' + bcolors.OKGREEN + item['position_status'].upper() + bcolors.ENDC,
-                else:
-                    print '| position ' + bcolors.FAIL + item['position_status'].upper() + bcolors.ENDC,
+                print '| position ' + color(item['position_status']),
             print
         except KeyError:
             print
