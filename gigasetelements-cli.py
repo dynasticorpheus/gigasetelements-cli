@@ -73,7 +73,7 @@ def log(str, type=0):
 
 
 def color(str):
-    normal = ['ok', 'online', 'closed', 'up_to_date']
+    normal = ['ok', 'online', 'closed', 'up_to_date', 'home']
     if str in normal:
         str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
     else:
@@ -195,7 +195,8 @@ def connect():
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+#    log('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+    log('Status ' + color(status_data['home_state']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
 
