@@ -5,6 +5,7 @@ try:
     imp.find_module('requests')
 except ImportError:
     print('[-] requests not found, try: pip install requests')
+    print
     sys.exit()
 
 
@@ -42,8 +43,8 @@ args = parser.parse_args()
 s = requests.Session()
 
 url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
-url_events = 'https://api.gigaset-elements.de/api/v1/me/events'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
+url_events = 'https://api.gigaset-elements.de/api/v1/me/events'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 url_test = 'http://httpbin.org/status/503'
 
@@ -133,36 +134,64 @@ def configure():
         requests.packages.urllib3.disable_warnings()
 
 
+def is_json(myjson):
+    try:
+        json_object = json.loads(myjson)
+    except ValueError, e:
+        return False
+    return True
+
+
+def restget(url):
+    data = ''
+    try:
+        r = s.get(url)
+    except requests.exceptions.RequestException as e:
+        log(str(e.message))
+        print
+        sys.exit()
+    if r.status_code != requests.codes.ok:
+        log('HTTP error ' + str(r.status_code), 3)
+        print
+        sys.exit()
+    if is_json(r.text):
+        data = r.json()
+    if data == '':
+        data = r.text
+    return data
+
+
+def restpost(url, payload):
+    try:
+        r = s.post(url, data=payload)
+    except requests.exceptions.RequestException as e:
+        log(str(e.message))
+        print
+        sys.exit()
+    if r.status_code != requests.codes.ok:
+        log('HTTP error ' + str(r.status_code), 3)
+        print
+        sys.exit()
+    commit_data = r.json()
+    return commit_data
+
+
 def connect():
     global my_basestation
     global basestation_data
     global status_data
     payload = {'password': args.password, 'email': args.username}
-    try:
-        r = s.post(url_identity, data=payload)
-    except requests.exceptions.RequestException as e:
-        log(str(e.message))
-        sys.exit()
-    commit_data = r.json()
-    if r.status_code == requests.codes.ok:
-        log(commit_data['message'])
-        r = s.get(url_auth)
-        if r.status_code != requests.codes.ok:
-            log('HTTP error ' + str(r.status_code), 3)
-            sys.exit()
-        log(r.text)
-        r = s.get(url_base)
-        basestation_data = r.json()
-        my_basestation = basestation_data[0]['id']
-        log('Basestation ' + my_basestation)
-        r = s.get(url_events + '?limit=1')
-        status_data = r.json()
-        if args.modus is None:
-            log('System status ' + color(status_data['home_state']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
-    else:
-        log(str(r.status_code) + ' ' + commit_data['message'], 3)
-        sys.exit()
-        return
+    commit_data = restpost(url_identity, payload)
+    log(commit_data['message'])
+    auth_data = restget(url_auth)
+    log(auth_data)
+    basestation_data = restget(url_base)
+    my_basestation = basestation_data[0]['id']
+    log('Basestation ' + basestation_data[0]['id'])
+    status_data = restget(url_events + '?limit=1')
+    if args.modus is None:
+        log('System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+    return
 
 
 def modus_switch():
@@ -178,6 +207,7 @@ def pb_message(pbmsg):
             imp.find_module('pushbullet')
         except ImportError:
             log('pushbullet not found, try: pip install pushbullet.py', 3)
+            print
             sys.exit()
         import pushbullet
         from pushbullet import PushBullet
@@ -196,10 +226,10 @@ def pb_message(pbmsg):
 def list_events():
     if args.filter is None and args.date is None:
         log('Showing last ' + str(args.events) + ' event(s)')
-        r = s.get(url_events + '?limit=' + str(args.events))
+        event_data = restget(url_events + '?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
         log('Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)')
-        r = s.get(url_events + '?limit=' + str(args.events) + '&group=' + str(args.filter))
+        event_data = restget(url_events + '?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
@@ -210,11 +240,10 @@ def list_events():
             sys.exit()
     if args.filter is None and args.date is not None:
         log('Showing event(s) between ' + args.date[0] + ' and ' + args.date[1])
-        r = s.get(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
+        event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
         log('Showing ' + str(args.filter).upper() + ' event(s) between ' + args.date[0] + ' and ' + args.date[1])
-        r = s.get(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
-    event_data = r.json()
+        event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
             print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
