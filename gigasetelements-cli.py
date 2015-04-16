@@ -177,7 +177,6 @@ def restpost(url, payload):
 
 
 def connect():
-    global my_basestation
     global basestation_data
     global status_data
     payload = {'password': args.password, 'email': args.username}
@@ -186,7 +185,6 @@ def connect():
     auth_data = restget(url_auth)
     log(auth_data)
     basestation_data = restget(url_base)
-    my_basestation = basestation_data[0]['id']
     log('Basestation ' + basestation_data[0]['id'])
     status_data = restget(url_events + '?limit=1')
     if args.modus is None:
@@ -196,7 +194,7 @@ def connect():
 
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
-    r = s.post(url_base + '/' + my_basestation, data=json.dumps(switch))
+    restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
     return
 
