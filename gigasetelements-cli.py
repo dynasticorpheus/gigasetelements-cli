@@ -5,7 +5,7 @@ import imp
 try:
     imp.find_module('requests')
 except ImportError:
-    print('[-] requests not found, try: pip install requests')
+    print('[-] requests not found, try: sudo pip install requests')
     print
     sys.exit()
 
@@ -74,11 +74,11 @@ def log(str, type=0):
     return
 
 
-def exist_module(module):
+def exist_module(module, package):
     try:
         imp.find_module(module)
     except ImportError:
-        log(module + ' not found, try: pip install ' + module, 3)
+        log(module + ' not found, try: sudo pip install ' + package, 3)
         print
         sys.exit()
     return
@@ -220,7 +220,7 @@ def isTimeFormat(input):
 
 
 def add_cron(schedule):
-    exist_module('crontab')
+    exist_module('crontab', 'python-crontab')
     if args.modus is None:
         log('Please also specify modus using -m option to schedule cron job', 3)
         print
@@ -245,7 +245,7 @@ def add_cron(schedule):
 
 def pb_message(pbmsg):
     if args.notify is not None and args.quiet is not True:
-        exist_module('pushbullet')
+        exist_module('pushbullet', 'pushbullet.py')
         from pushbullet import PushBullet
         try:
             pb = PushBullet(args.notify)
