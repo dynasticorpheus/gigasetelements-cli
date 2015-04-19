@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import imp
+
 try:
     imp.find_module('requests')
 except ImportError:
@@ -8,11 +9,11 @@ except ImportError:
     print
     sys.exit()
 
-
 import gc
 import os
 import sys
 import time
+import datetime
 import argparse
 import json
 import requests
@@ -21,15 +22,16 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.1.1'
+_version_ = '1.1.2'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
 parser.add_argument('-u', '--username', help='username (email) in use with my.gigaset-elements.com', required=False)
 parser.add_argument('-p', '--password', help='password in use with my.gigaset-elements.com', required=False)
-parser.add_argument('-n', '--notify', help='pushbullet token', required=False)
+parser.add_argument('-n', '--notify', help='pushbullet token', required=False, metavar='TOKEN')
 parser.add_argument('-e', '--events', help='show last <number> of events', type=int, required=False)
-parser.add_argument('-d', '--date', help='filter events on begin date - end date (DD/MM/YYYY)', required=False, nargs=2)
+parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
+parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
@@ -37,8 +39,8 @@ parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefi
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_version_))
-args = parser.parse_args()
 
+args = parser.parse_args()
 
 s = requests.Session()
 
@@ -69,6 +71,16 @@ def log(str, type=0):
         print bcolors.WARN + '[-] ' + str + bcolors.ENDC
     if type == 3:
         print bcolors.FAIL + '[-] ' + str + bcolors.ENDC
+    return
+
+
+def exist_module(module):
+    try:
+        imp.find_module(module)
+    except ImportError:
+        log(module + ' not found, try: pip install ' + module, 3)
+        print
+        sys.exit()
     return
 
 
@@ -195,20 +207,45 @@ def connect():
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
-#    log('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
     log('Status ' + color(status_data['home_state']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    return
+
+
+def isTimeFormat(input):
+    try:
+        time.strptime(input, '%H:%M')
+        return True
+    except ValueError:
+        return False
+
+
+def add_cron(schedule):
+    exist_module('crontab')
+    if args.modus is None:
+        log('Please also specify modus using -m option to schedule cron job', 3)
+        print
+        sys.exit()
+    if isTimeFormat(args.cronjob):
+        from crontab import CronTab
+        cron = CronTab(user=True)
+        now = datetime.datetime.now()
+        job = cron.new(command=os.path.realpath(__file__) + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+        job.month.on(datetime.datetime.now().strftime("%-m"))
+        job.day.on(datetime.datetime.now().strftime("%-d"))
+        job.hour.on(time.strptime(args.cronjob, "%H:%M")[3])
+        job.minute.on(time.strptime(args.cronjob, "%H:%M")[4])
+        cron.write()
+        log('Cron job scheduled | Modus will be set to ' + color(args.modus) + ' at ' + args.cronjob)
+    else:
+        log('Please use valid time (00:00 - 23:59)', 3)
+        print
+        sys.exit()
     return
 
 
 def pb_message(pbmsg):
     if args.notify is not None and args.quiet is not True:
-        try:
-            imp.find_module('pushbullet')
-        except ImportError:
-            log('pushbullet not found, try: pip install pushbullet.py', 3)
-            print
-            sys.exit()
-        import pushbullet
+        exist_module('pushbullet')
         from pushbullet import PushBullet
         try:
             pb = PushBullet(args.notify)
@@ -234,7 +271,7 @@ def list_events():
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
             to_ts = str(int(time.mktime(time.strptime(args.date[1], '%d/%m/%Y'))) * 1000)
         except:
-            log('Date(s) not provided in DD/MM/YYYY format', 3)
+            log('Please provide date(s) in DD/MM/YYYY format', 3)
             print
             sys.exit()
     if args.filter is None and args.date is not None:
@@ -275,7 +312,7 @@ try:
     configure()
     connect()
 
-    if args.modus is not None:
+    if args.modus is not None and args.cronjob is None:
         modus_switch()
         if args.status is not True:
             pb_message('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
@@ -283,6 +320,9 @@ try:
     if args.status:
         status()
         pb_message('Status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+
+    if args.cronjob is not None:
+        add_cron(args.cronjob)
 
     if args.events is None and args.date is None:
         pass
