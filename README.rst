@@ -87,10 +87,7 @@ Help
 
 To do
 -----
-Improve authentication/connection error handling
-
 Replicate all functionality from app and/or website ... a long list
-
 Improve overall code whilst I learn python
 
 
