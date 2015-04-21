@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 import imp
-
-try:
-    imp.find_module('requests')
-except ImportError:
-    print('[-] requests not found, try: sudo pip install requests')
-    print
-    sys.exit()
-
 import gc
 import os
 import sys
@@ -16,7 +8,6 @@ import time
 import datetime
 import argparse
 import json
-import requests
 import ConfigParser
 
 gc.disable()
@@ -42,8 +33,6 @@ parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action=
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_version_))
 
 args = parser.parse_args()
-
-s = requests.Session()
 
 url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
@@ -338,6 +327,10 @@ try:
         if args.status is False and args.events is None:
             print
             sys.exit()
+
+    exist_module('requests', 'requests')
+    import requests
+    s = requests.Session()
 
     configure()
     connect()
