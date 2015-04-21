@@ -22,7 +22,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.1.2'
+_version_ = '1.1.3'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -32,6 +32,7 @@ parser.add_argument('-n', '--notify', help='pushbullet token', required=False, m
 parser.add_argument('-e', '--events', help='show last <number> of events', type=int, required=False)
 parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
 parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
+parser.add_argument('-r', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
@@ -243,6 +244,23 @@ def add_cron(schedule):
     return
 
 
+def remove_cron():
+    exist_module('crontab', 'python-crontab')
+    origin = command = os.path.realpath(__file__)
+    from crontab import CronTab
+    cron = CronTab(user=True)
+    iter = cron.find_command(origin)
+    count = 0
+    for i in iter:
+        log('Cron job removed | ' + str(i))
+        count = count + 1
+    cron.remove_all(origin)
+    cron.write()
+    if count == 0:
+        log('No cron jobs found for removal | ' + origin)
+    return
+
+
 def pb_message(pbmsg):
     if args.notify is not None and args.quiet is not True:
         exist_module('pushbullet', 'pushbullet.py')
@@ -309,6 +327,18 @@ try:
     print 'Gigaset Elements - Command-line Interface'
     print
 
+    if args.cronjob is not None:
+        add_cron(args.cronjob)
+        if args.status is False and args.events is None:
+            print
+            sys.exit()
+
+    if args.remove and args.cronjob is None:
+        remove_cron()
+        if args.status is False and args.events is None:
+            print
+            sys.exit()
+
     configure()
     connect()
 
@@ -320,9 +350,6 @@ try:
     if args.status:
         status()
         pb_message('Status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
-
-    if args.cronjob is not None:
-        add_cron(args.cronjob)
 
     if args.events is None and args.date is None:
         pass
