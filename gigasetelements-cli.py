@@ -13,7 +13,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.1.3'
+_version_ = '1.1.4'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -68,10 +68,17 @@ def exist_module(module, package):
     try:
         imp.find_module(module)
     except ImportError:
-        log(module + ' not found, try: sudo pip install ' + package, 3)
+        log(module + ' not found, try: pip install ' + package, 3)
         print
         sys.exit()
     return
+
+
+def os_type(str):
+    if os.name == str:
+        return True
+    else:
+        return False
 
 
 def color(str):
@@ -299,7 +306,7 @@ def status():
     print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
     for item in basestation_data[0]['sensors']:
         try:
-            print('[-] ') + item['friendly_name'] + ' ' + color(item['status']) + '| firmware ' + color(item['firmware_status']),
+            print('[-] ') + item['friendly_name'] + ' ' + color(item['status']) + ' | firmware ' + color(item['firmware_status']),
             if item['type'] != 'is01':
                 print '| battery ' + color(item['battery']['state']),
             if item['type'] == 'ds02':
@@ -316,17 +323,22 @@ try:
     print 'Gigaset Elements - Command-line Interface'
     print
 
-    if args.cronjob is not None:
-        add_cron(args.cronjob)
-        if args.status is False and args.events is None:
-            print
-            sys.exit()
+    if os_type('nt'):
+        exist_module('colorama', 'colorama')
+        import colorama
+        colorama.init()
 
-    if args.remove and args.cronjob is None:
-        remove_cron()
-        if args.status is False and args.events is None:
-            print
-            sys.exit()
+    if os_type('posix'):
+        if args.cronjob is not None:
+            add_cron(args.cronjob)
+            if args.status is False and args.events is None:
+                print
+                sys.exit()
+        if args.remove and args.cronjob is None:
+            remove_cron()
+            if args.status is False and args.events is None:
+                print
+                sys.exit()
 
     exist_module('requests', 'requests')
     import requests
