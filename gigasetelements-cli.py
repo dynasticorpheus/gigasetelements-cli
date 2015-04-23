@@ -52,7 +52,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def log(str, type=0):
+def log(str, type=0, exit=0):
     if type == 0:
         print '[-] ' + str
     if type == 1:
@@ -61,6 +61,9 @@ def log(str, type=0):
         print bcolors.WARN + '[-] ' + str + bcolors.ENDC
     if type == 3:
         print bcolors.FAIL + '[-] ' + str + bcolors.ENDC
+    if exit == 1:
+        print
+        sys.exit() 
     return
 
 
@@ -68,9 +71,7 @@ def exist_module(module, package):
     try:
         imp.find_module(module)
     except ImportError:
-        log(module + ' not found, try: pip install ' + package, 3)
-        print
-        sys.exit()
+        log(module + ' not found, try: pip install ' + package, 3, 1)
     return
 
 
@@ -101,9 +102,7 @@ def configure():
             args.config = None
     else:
         if os.path.exists(args.config) == False:
-            log('File does not exist ' + args.config, 3)
-            print
-            sys.exit()
+            log('File does not exist ' + args.config, 3, 1)
     if args.config is not None:
         log('Reading configuration from ' + args.config)
         config = ConfigParser.ConfigParser()
@@ -131,9 +130,7 @@ def configure():
                 requests.packages.urllib3.disable_warnings()
         return
     if None in (args.username, args.password):
-        log('Username and/or password missing', 3)
-        print
-        sys.exit()
+        log('Username and/or password missing', 3, 1)
     if args.warning:
         requests.packages.urllib3.disable_warnings()
 
@@ -151,13 +148,9 @@ def restget(url):
     try:
         r = s.get(url)
     except requests.exceptions.RequestException as e:
-        log(str(e.message))
-        print
-        sys.exit()
+        log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
-        log('HTTP error ' + str(r.status_code), 3)
-        print
-        sys.exit()
+        log('HTTP error ' + str(r.status_code), 3, 1)
     if is_json(r.text):
         data = r.json()
     if data == '':
@@ -169,13 +162,9 @@ def restpost(url, payload):
     try:
         r = s.post(url, data=payload)
     except requests.exceptions.RequestException as e:
-        log(str(e.message))
-        print
-        sys.exit()
+        log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
-        log('HTTP error ' + str(r.status_code), 3)
-        print
-        sys.exit()
+        log('HTTP error ' + str(r.status_code), 3, 1)
     commit_data = r.json()
     return commit_data
 
@@ -214,9 +203,7 @@ def isTimeFormat(input):
 def add_cron(schedule):
     exist_module('crontab', 'python-crontab')
     if args.modus is None:
-        log('Please also specify modus using -m option to schedule cron job', 3)
-        print
-        sys.exit()
+        log('Please also specify modus using -m option to schedule cron job', 3, 1)
     if isTimeFormat(args.cronjob):
         from crontab import CronTab
         cron = CronTab(user=True)
@@ -229,9 +216,7 @@ def add_cron(schedule):
         cron.write()
         log('Cron job scheduled | Modus will be set to ' + color(args.modus) + ' at ' + args.cronjob)
     else:
-        log('Please use valid time (00:00 - 23:59)', 3)
-        print
-        sys.exit()
+        log('Please use valid time (00:00 - 23:59)', 3, 1)
     return
 
 
@@ -280,9 +265,7 @@ def list_events():
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
             to_ts = str(int(time.mktime(time.strptime(args.date[1], '%d/%m/%Y'))) * 1000)
         except:
-            log('Please provide date(s) in DD/MM/YYYY format', 3)
-            print
-            sys.exit()
+            log('Please provide date(s) in DD/MM/YYYY format', 3, 1)
     if args.filter is None and args.date is not None:
         log('Showing event(s) between ' + args.date[0] + ' and ' + args.date[1])
         event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
