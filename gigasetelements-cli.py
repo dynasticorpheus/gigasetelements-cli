@@ -92,16 +92,11 @@ def color(str):
 
 def configure():
     if args.config is None:
-        if os.path.exists('/opt/etc/gigasetelements-cli.conf'):
-            args.config = '/opt/etc/gigasetelements-cli.conf'
-        if os.path.exists('/usr/local/etc/gigasetelements-cli.conf'):
-            args.config = '/usr/local/etc/gigasetelements-cli.conf'
-        if os.path.exists('/usr/etc/gigasetelements-cli.conf'):
-            args.config = '/usr/etc/gigasetelements-cli.conf'
-        if os.path.exists('/etc/gigasetelements-cli.conf'):
-            args.config = '/etc/gigasetelements-cli.conf'
-        if os.path.exists(os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')):
-            args.config = os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')
+        locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
+                     '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')]
+        for i in locations:
+            if os.path.exists(i):
+                args.config = i
         if args.ignore:
             args.config = None
     else:
