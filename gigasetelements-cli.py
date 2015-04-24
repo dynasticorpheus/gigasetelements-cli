@@ -63,7 +63,7 @@ def log(str, type=0, exit=0):
         print bcolors.FAIL + '[-] ' + str + bcolors.ENDC
     if exit == 1:
         print
-        sys.exit() 
+        sys.exit()
     return
 
 
@@ -208,9 +208,13 @@ def add_cron(schedule):
         from crontab import CronTab
         cron = CronTab(user=True)
         now = datetime.datetime.now()
+        timer = now.replace(hour=time.strptime(args.cronjob, "%H:%M")[3], minute=time.strptime(args.cronjob, "%H:%M")[4], second=0, microsecond=0)
         job = cron.new(command=os.path.realpath(__file__) + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         job.month.on(datetime.datetime.now().strftime("%-m"))
-        job.day.on(datetime.datetime.now().strftime("%-d"))
+        if now < now.replace(hour=time.strptime(args.cronjob, "%H:%M")[3], minute=time.strptime(args.cronjob, "%H:%M")[4], second=0, microsecond=0):
+            job.day.on(datetime.datetime.now().strftime("%-d"))
+        else:
+            job.day.on(str((int(datetime.datetime.now().strftime("%-d")) + 1)))
         job.hour.on(time.strptime(args.cronjob, "%H:%M")[3])
         job.minute.on(time.strptime(args.cronjob, "%H:%M")[4])
         cron.write()
