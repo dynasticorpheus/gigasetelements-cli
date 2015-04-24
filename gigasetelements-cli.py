@@ -208,17 +208,18 @@ def add_cron(schedule):
         from crontab import CronTab
         cron = CronTab(user=True)
         now = datetime.datetime.now()
-        timer = now.replace(hour=time.strptime(args.cronjob, "%H:%M")[3], minute=time.strptime(args.cronjob, "%H:%M")[4], second=0, microsecond=0)
+        timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
         job = cron.new(command=os.path.realpath(__file__) + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
-        job.month.on(datetime.datetime.now().strftime("%-m"))
-        if now < now.replace(hour=time.strptime(args.cronjob, "%H:%M")[3], minute=time.strptime(args.cronjob, "%H:%M")[4], second=0, microsecond=0):
-            job.day.on(datetime.datetime.now().strftime("%-d"))
+        job.month.on(datetime.datetime.now().strftime('%-m'))
+        if now < now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0):
+            job.day.on(datetime.datetime.now().strftime('%-d'))
         else:
-            job.day.on(str((int(datetime.datetime.now().strftime("%-d")) + 1)))
-        job.hour.on(time.strptime(args.cronjob, "%H:%M")[3])
-        job.minute.on(time.strptime(args.cronjob, "%H:%M")[4])
+            job.day.on(str((int(datetime.datetime.now().strftime('%-d')) + 1)))
+            timer = now.replace(day=(int(datetime.datetime.now().strftime('%-d')) + 1), hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
+        job.hour.on(time.strptime(args.cronjob, '%H:%M')[3])
+        job.minute.on(time.strptime(args.cronjob, '%H:%M')[4])
         cron.write()
-        log('Cron job scheduled | Modus will be set to ' + color(args.modus) + ' at ' + args.cronjob)
+        log('Cron job scheduled | Modus will be set to ' + color(args.modus) + ' on ' + timer.strftime('%A %d %B %Y %H:%M'))
     else:
         log('Please use valid time (00:00 - 23:59)', 3, 1)
     return
