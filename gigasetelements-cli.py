@@ -13,7 +13,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.1.4'
+_version_ = '1.1.5'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -211,7 +211,7 @@ def add_cron(schedule):
         timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
         job = cron.new(command=os.path.realpath(__file__) + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         job.month.on(datetime.datetime.now().strftime('%-m'))
-        if now < now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0):
+        if now < timer:
             job.day.on(datetime.datetime.now().strftime('%-d'))
         else:
             job.day.on(str((int(datetime.datetime.now().strftime('%-d')) + 1)))
