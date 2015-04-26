@@ -7,17 +7,28 @@ It comes with an easy to use CLI (command-line interface) suitable for direct us
 .. image:: http://blog.gigaset.com/wp-content/uploads/2014/05/Gigaset-elements-starter-kit.png
     :target: https://www.gigaset-elements.com
 
-
 Installation
 ------------
-No installation required but it does depend on the requests and pushbullet.py library
+No installation required but it does depend on the requests module, colorama and pushbullet.py are optional but bring additional functionality. 
 
-pip install requests pushbullet.py
+ **pip install requests pushbullet.py colorama**
 
+ requests: RESTful functionality to access gigaset elements API.    
+
+ pusbullet.py: Enable pushbullet functionality, core functions work without this module.   
+
+ colorama: Enable colored terminal text and cursor positioning on windows platform. Not required on POSIX.
+
+Features
+------------
+ * Show system and sensor status
+ * List events and filter by type and/or date
+ * Add and remove cronjobs for modus change at given time
+ * Receive pushbullet messages on status and/or modus change
 
 Usage
 -----
-Set alarm modus to HOME::
+* **Set alarm modus to HOME**::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m home
 
@@ -27,8 +38,8 @@ Set alarm modus to HOME::
     [-]  Authenticated as "first.last@domain.com" with language "nl"
     [-]  Basestation F19B75Z4EDC9F128A1P8C79BFA3178A1
     [-]  Modus set to HOME
-
-Set alarm modus to AWAY and send PushBullet notification::
+                                        
+* **Set alarm modus to AWAY and send PushBullet notification**::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m away -n z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
 
@@ -40,7 +51,7 @@ Set alarm modus to AWAY and send PushBullet notification::
     [-]  Modus set to AWAY
     [-]  PushBullet notification sent
 
-Show system EVENTS::
+* **Show system EVENTS**::
 
     $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -e 5
 
@@ -56,20 +67,11 @@ Show system EVENTS::
     [-]  02/21/2015 22:01:22 homecoming
     [-]  02/21/2015 22:01:18 open Frontdoor
 
-Read options from CONFIG file:: (command-line parameters override configuration file)::
-
- On POSIX configuration file is automatically read from below locations: (use -i to ignore)
-
-    ~/.gigasetelements-cli
-    /etc/gigasetelements-cli.conf
-    /usr/etc/gigasetelements-cli.conf
-    /usr/local/etc/gigasetelements-cli.conf
-    /opt/etc/gigasetelements-cli.conf
-
+* **Read options from CONFIG file**::
 
     $ ./gigasetelements-cli.py -c /etc/gigasetelements-cli.conf
 
-    Gigaset Elements - Command-line Interface
+    Gigaset Elements - Command Line Interface
 
     [-]  Reading configuration from /etc/gigasetelements-cli.conf
     [-]  User logged in successfully.
@@ -79,6 +81,24 @@ Read options from CONFIG file:: (command-line parameters override configuration 
     [-]  PushBullet notification sent
 
 
+ On POSIX configuration file is automatically read from below locations: (use -i to ignore)
+
+ *    ~/.gigasetelements-cli
+ *    /etc/gigasetelements-cli.conf
+ *    /usr/etc/gigasetelements-cli.conf
+ *    /usr/local/etc/gigasetelements-cli.conf
+ *    /opt/etc/gigasetelements-cli.conf
+
+* **Schedule CRONJOB**::
+
+    $ ./gigasetelements-cli.py -m home -o 17:00
+
+    Gigaset Elements - Command Line Interface
+
+    [-]  Cron job scheduled | Modus will be set to HOME on Sunday 26 April 2015 17:00
+
+Note: Currently requires filled config file at one of the default locations, see above.
+
 Help
 -----
 
@@ -87,8 +107,8 @@ Help
 
 To do
 -----
-Replicate all functionality from app and/or website ... a long list
-Improve overall code whilst I learn python
+* Replicate all functionality from app and/or website ... a long list
+* Improve overall code whilst I learn python
 
 
 Notes
