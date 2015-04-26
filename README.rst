@@ -107,6 +107,7 @@ Help
 
 To do
 -----
+* Prepare for API V2
 * Replicate all functionality from app and/or website ... a long list
 * Improve overall code whilst I learn python
 
