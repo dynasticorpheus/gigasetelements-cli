@@ -97,7 +97,6 @@ Usage
 
     [-]  Cron job scheduled | Modus will be set to HOME on Sunday 26 April 2015 17:00
 
-Note: Currently requires filled config file at one of the default locations, see above.
 
 Help
 -----
