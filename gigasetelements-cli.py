@@ -129,16 +129,12 @@ def configure():
             args.notify = config.get('accounts', 'pbtoken')
         if args.notify == '':
             args.notify = None
-        if args.warning:
-            requests.packages.urllib3.disable_warnings()
         else:
             if config.getboolean('options', 'nowarning'):
-                requests.packages.urllib3.disable_warnings()
+                args.warning = True
         return
     if None in (args.username, args.password):
         log('Username and/or password missing', 3, 1)
-    if args.warning:
-        requests.packages.urllib3.disable_warnings()
 
 
 def is_json(myjson):
@@ -178,6 +174,8 @@ def restpost(url, payload):
 def connect():
     global basestation_data
     global status_data
+    if args.warning:
+        requests.packages.urllib3.disable_warnings()
     payload = {'password': args.password, 'email': args.username}
     commit_data = restpost(url_identity, payload)
     log(commit_data['message'])
