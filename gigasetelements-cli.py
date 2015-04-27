@@ -92,6 +92,8 @@ def color(str):
 
 
 def configure():
+    global credfromfile
+    credfromfile = False
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                      '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf')]
@@ -109,12 +111,16 @@ def configure():
         config.read(args.config)
         if args.username is None:
             args.username = config.get('accounts', 'username')
+            credfromfile = True
         if args.username == '':
             args.username = None
+            credfromfile = False
         if args.password is None:
             args.password = config.get('accounts', 'password')
+            credfromfile = True
         if args.password == '':
             args.password = None
+            credfromfile = False
         if args.modus is None:
             args.modus = config.get('options', 'modus')
         if args.modus == '':
@@ -209,7 +215,10 @@ def add_cron(schedule):
         cron = CronTab(user=True)
         now = datetime.datetime.now()
         timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
-        job = cron.new(command=os.path.realpath(__file__) + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+        if credfromfile:
+            job = cron.new(command=os.path.realpath(__file__) + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+        else:
+            job = cron.new(command=os.path.realpath(__file__) + ' -u ' + args.username + ' -p ' + args.password + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         job.month.on(datetime.datetime.now().strftime('%-m'))
         if now < timer:
             job.day.on(datetime.datetime.now().strftime('%-d'))
@@ -306,6 +315,8 @@ try:
     print 'Gigaset Elements - Command-line Interface'
     print
 
+    configure()
+
     if os_type('nt'):
         exist_module('colorama', 'colorama')
         import colorama
@@ -327,7 +338,6 @@ try:
     import requests
     s = requests.Session()
 
-    configure()
     connect()
 
     if args.modus is not None and args.cronjob is None:
