@@ -148,7 +148,7 @@ def is_json(myjson):
 def restget(url):
     data = ''
     try:
-        r = s.get(url)
+        r = s.get(url, timeout=15, stream=False)
     except requests.exceptions.RequestException as e:
         log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
@@ -162,7 +162,7 @@ def restget(url):
 
 def restpost(url, payload):
     try:
-        r = s.post(url, data=payload)
+        r = s.post(url, data=payload, timeout=15, stream=False)
     except requests.exceptions.RequestException as e:
         log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
