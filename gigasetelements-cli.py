@@ -147,8 +147,9 @@ def is_json(myjson):
 
 def restget(url):
     data = ''
+    nokeepalive = {"Connection": "close"}
     try:
-        r = s.get(url, timeout=15, stream=False)
+        r = s.get(url, timeout=15, stream=False, headers=nokeepalive)
     except requests.exceptions.RequestException as e:
         log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
