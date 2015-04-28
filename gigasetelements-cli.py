@@ -13,7 +13,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.1.5'
+_version_ = '1.1.6'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
