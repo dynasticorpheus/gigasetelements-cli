@@ -13,7 +13,7 @@ import ConfigParser
 gc.disable()
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.1.6'
+_version_ = '1.1.7'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -26,7 +26,8 @@ parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (require
 parser.add_argument('-r', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
-parser.add_argument('-s', '--status', help='show sensor status', action='store_true', required=False)
+parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
+parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
@@ -38,6 +39,7 @@ url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 url_events = 'https://api.gigaset-elements.de/api/v1/me/events'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
+url_camera = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 url_test = 'http://httpbin.org/status/503'
 
 
@@ -83,8 +85,8 @@ def os_type(str):
 
 
 def color(str):
-    normal = ['ok', 'online', 'closed', 'up_to_date', 'home']
-    if str in normal:
+    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi']
+    if str.lower() in normal:
         str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
     else:
         str = bcolors.FAIL + str.upper() + bcolors.ENDC
@@ -148,7 +150,7 @@ def is_json(myjson):
 def restget(url):
     data = ''
     try:
-        r = s.get(url, timeout=15, stream=False)
+        r = s.get(url, timeout=90, stream=False)
     except requests.exceptions.RequestException as e:
         log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
@@ -162,7 +164,7 @@ def restget(url):
 
 def restpost(url, payload):
     try:
-        r = s.post(url, data=payload, timeout=15, stream=False)
+        r = s.post(url, data=payload, timeout=90, stream=False)
     except requests.exceptions.RequestException as e:
         log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
@@ -179,7 +181,9 @@ def connect():
     payload = {'password': args.password, 'email': args.username}
     commit_data = restpost(url_identity, payload)
     log(commit_data['message'])
+    s.headers['Connection'] = 'close'
     auth_data = restget(url_auth)
+    s.headers['Connection'] = 'keep-alive'
     log(auth_data)
     basestation_data = restget(url_base)
     log('Basestation ' + basestation_data[0]['id'])
@@ -292,7 +296,7 @@ def list_events():
     return
 
 
-def status():
+def sensor():
     print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
     for item in basestation_data[0]['sensors']:
         try:
@@ -305,6 +309,21 @@ def status():
         except KeyError:
             print
             continue
+    return
+
+
+def camera():
+    global camera_data
+    camera_data = restget(url_camera)
+    if len(camera_data[0]['id']) == 12:
+        for item in camera_data:
+            try:
+                print('[-] ') + camera_data[0]['friendly_name'] + ' ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+                print(' | quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
+                print(' | connection ' + color(camera_data[0]['settings']['connection']) + ' | motion detection ' + color(camera_data[0]['motion_detection']['status']))
+            except KeyError:
+                print
+                continue
     return
 
 
@@ -323,29 +342,31 @@ try:
     if os_type('posix'):
         if args.cronjob is not None:
             add_cron(args.cronjob)
-            if args.status is False and args.events is None:
+            if args.sensor is False and args.events is None:
                 print
                 sys.exit()
         if args.remove and args.cronjob is None:
             remove_cron()
-            if args.status is False and args.events is None:
+            if args.sensor is False and args.events is None:
                 print
                 sys.exit()
 
     exist_module('requests', 'requests')
     import requests
     s = requests.Session()
-    s.headers['Connection'] = 'close'
 
     connect()
 
     if args.modus is not None and args.cronjob is None:
         modus_switch()
-        if args.status is not True:
+        if args.sensor is not True:
             pb_message('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
 
-    if args.status:
-        status()
+    if args.camera:
+        camera()
+
+    if args.sensor:
+        sensor()
         pb_message('Status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
     if args.events is None and args.date is None:
