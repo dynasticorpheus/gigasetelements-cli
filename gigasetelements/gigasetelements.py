@@ -179,7 +179,10 @@ def connect():
     global basestation_data
     global status_data
     if args.warning:
-        requests.packages.urllib3.disable_warnings()
+        try:
+            requests.packages.urllib3.disable_warnings()
+        except:
+            pass
     payload = {'password': args.password, 'email': args.username}
     commit_data = restpost(url_identity, payload)
     log(commit_data['message'])
