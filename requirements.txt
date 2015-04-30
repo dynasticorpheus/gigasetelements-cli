@@ -1,0 +1,4 @@
+requests
+colorama
+python-crontab
+pushbullet.py

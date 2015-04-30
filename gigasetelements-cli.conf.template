@@ -27,4 +27,4 @@ pbtoken: z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
 modus: home
 
 # suppress urllib3 warnings {true,false} (optional)
-nowarning: false
+nowarning: true
