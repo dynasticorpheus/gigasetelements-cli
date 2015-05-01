@@ -24,7 +24,7 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: End Users/Desktop',
         'Topic :: Software Development :: Build Tools',
-        'License :: OSI Approved :: GNU General Public License version 2.0',
+        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
     ],
