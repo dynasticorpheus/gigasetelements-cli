@@ -13,7 +13,8 @@ with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
 setup(
     name='gigasetelements-cli',
     version='1.2.0',
-    description='control Gigaset Elements home security system from the cli',
+    description='gigasetelements-cli allows you to control your \
+    Gigaset Elements home security system from the command line.',
     long_description=long_description,
     url='https://github.com/dynasticorpheus/gigaset-elements',
     author='dynasticorpheus',
@@ -29,7 +30,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
 
-    keywords='Home Automation, Internet of Things (IoT)',
+    keywords='Home Automation, Home Security, Internet of Things (IoT)',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=['requests', 'colorama', 'python-crontab',
                       'pushbullet.py'],
