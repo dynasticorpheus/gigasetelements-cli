@@ -11,6 +11,10 @@ import json
 import ConfigParser
 
 import requests
+import colorama
+from crontab import CronTab
+from pushbullet import PushBullet
+
 
 _author_ = 'dynasticorpheus@gmail.com'
 _version_ = '1.2.0'
@@ -34,6 +38,7 @@ parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action=
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_version_))
 
 gc.disable()
+colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
@@ -68,14 +73,6 @@ def log(str, type=0, exit=0):
     if exit == 1:
         print
         sys.exit()
-    return
-
-
-def exist_module(module, package):
-    try:
-        imp.find_module(module)
-    except ImportError:
-        log(module + ' not found, try: pip install ' + package, 3, 1)
     return
 
 
@@ -214,11 +211,9 @@ def isTimeFormat(input):
 
 
 def add_cron(schedule):
-    exist_module('crontab', 'python-crontab')
     if args.modus is None:
         log('Please also specify modus using -m option to schedule cron job', 3, 1)
     if isTimeFormat(args.cronjob):
-        from crontab import CronTab
         cron = CronTab(user=True)
         now = datetime.datetime.now()
         timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
@@ -242,9 +237,7 @@ def add_cron(schedule):
 
 
 def remove_cron():
-    exist_module('crontab', 'python-crontab')
     origin = command = os.path.realpath(__file__)
-    from crontab import CronTab
     cron = CronTab(user=True)
     iter = cron.find_command(origin)
     count = 0
@@ -260,8 +253,6 @@ def remove_cron():
 
 def pb_message(pbmsg):
     if args.notify is not None and args.quiet is not True:
-        exist_module('pushbullet', 'pushbullet.py')
-        from pushbullet import PushBullet
         try:
             pb = PushBullet(args.notify)
         except pushbullet.errors.InvalidKeyError:
@@ -339,11 +330,6 @@ def main():
         print
 
         configure()
-
-        if os_type('nt'):
-            exist_module('colorama', 'colorama')
-            import colorama
-            colorama.init()
 
         if os_type('posix'):
             if args.cronjob is not None:
