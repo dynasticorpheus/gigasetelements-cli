@@ -33,9 +33,6 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=['requests', 'colorama', 'python-crontab',
                       'pushbullet.py'],
-    package_data={
-        'config': ['gigasetelements-cli.conf.template'],
-    },
 
     entry_points={
         'console_scripts': [
