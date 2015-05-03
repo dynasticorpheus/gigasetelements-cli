@@ -17,7 +17,7 @@ from pushbullet import PushBullet
 
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.2.1'
+_version_ = '1.2.2'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -320,6 +320,10 @@ def camera():
             except KeyError:
                 print
                 continue
+        stream_data = restget(url_camera + '/' + camera_data[0]['id'] + '/liveview/start')
+        log('Stream 1 | m3u8 | ' + stream_data['uri']['m3u8'])
+        log('Stream 2 | rtmp | ' + stream_data['uri']['rtmp'])
+        log('Stream 3 | rtsp | ' + stream_data['uri']['rtsp'])
     return
 
 
