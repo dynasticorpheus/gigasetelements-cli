@@ -9,15 +9,21 @@ It comes with an easy to use CLI (command-line interface) suitable for direct us
 
 Installation
 ------------
-No installation required but it does depend on the requests module, colorama and pushbullet.py are optional but bring additional functionality. 
 
- **pip install requests pushbullet.py colorama**
+**PYPI** - [https://pypi.python.org/pypi/gigasetelements-cli]
 
- requests: RESTful functionality to access gigaset elements API.    
+For easy installation including dependencies simply run below command (with elevated privileges if needed)
 
- pusbullet.py: Enable pushbullet functionality, core functions work without this module.   
+[-] *pip install gigasetelements-cli*
 
- colorama: Enable colored terminal text and cursor positioning on windows platform. Not required on POSIX.
+**GITHUB** - [https://github.com/dynasticorpheus/gigaset-elements]
+
+[1] *git clone https://github.com/dynasticorpheus/gigaset-elements.git*  
+
+[2] install *dependencies*, see requirements.txt
+
+[3] *python setup.py install* (or run from source using wrapper ./gigasetelements-cli.py)
+
 
 Features
 ------------
@@ -30,7 +36,7 @@ Usage
 -----
 * **Set alarm modus to HOME**::
 
-    $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m home
+    $ gigasetelements-cli -u first.last@domain.com -p mybigsecret -m home
 
     Gigaset Elements - Command Line Interface
 
@@ -41,7 +47,7 @@ Usage
                                         
 * **Set alarm modus to AWAY and send PushBullet notification**::
 
-    $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -m away -n z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
+    $ gigasetelements-cli -u first.last@domain.com -p mybigsecret -m away -n z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
 
     Gigaset Elements - Command Line Interface
 
@@ -53,7 +59,7 @@ Usage
 
 * **Show system EVENTS**::
 
-    $ ./gigasetelements-cli.py -u first.last@domain.com -p mybigsecret -e 5
+    $ gigasetelements-cli -u first.last@domain.com -p mybigsecret -e 5
 
     Gigaset Elements - Command Line Interface
 
@@ -69,7 +75,7 @@ Usage
 
 * **Read options from CONFIG file**::
 
-    $ ./gigasetelements-cli.py -c /etc/gigasetelements-cli.conf
+    $ gigasetelements-cli -c /etc/gigasetelements-cli.conf
 
     Gigaset Elements - Command Line Interface
 
@@ -91,7 +97,7 @@ Usage
 
 * **Schedule CRONJOB**::
 
-    $ ./gigasetelements-cli.py -m home -o 17:00
+    $ gigasetelements-cli -m home -o 17:00
 
     Gigaset Elements - Command Line Interface
 
@@ -101,7 +107,7 @@ Usage
 Help
 -----
 
-    $ ./gigasetelements-cli.py -h
+    $ gigasetelements-cli -h
 
 
 To do
