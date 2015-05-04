@@ -218,9 +218,9 @@ def add_cron(schedule):
         now = datetime.datetime.now()
         timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
         if credfromfile:
-            job = cron.new(command=os.path.realpath(__file__) + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+            job = cron.new('gigasetelements-cli -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         else:
-            job = cron.new(command=os.path.realpath(__file__) + ' -u ' + args.username + ' -p ' + args.password + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+            job = cron.new('gigasetelements-cli -u ' + args.username + ' -p ' + args.password + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         job.month.on(datetime.datetime.now().strftime('%-m'))
         if now < timer:
             job.day.on(datetime.datetime.now().strftime('%-d'))
@@ -237,17 +237,17 @@ def add_cron(schedule):
 
 
 def remove_cron():
-    origin = command = os.path.realpath(__file__)
     cron = CronTab(user=True)
-    iter = cron.find_command(origin)
+    iter = cron.find_command('gigasetelements-cli')
     count = 0
     for i in iter:
         log('Cron job removed | ' + str(i))
         count = count + 1
-    cron.remove_all(origin)
-    cron.write()
+    cron.remove_all('gigasetelements-cli')
     if count == 0:
-        log('No cron jobs found for removal | ' + origin)
+        log('No cron jobs found for removal | gigasetelements-cli', 3)
+    else:
+        cron.write()
     return
 
 
@@ -318,7 +318,7 @@ def camera():
                 print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
                 print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
                 if camera_data[0]['settings']['connection'] == 'wifi':
-                    print('| ssid ' + color(camera_data[0]['wifi_ssid']))
+                    print('| ssid ' + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC)
             except KeyError:
                 print
                 continue
