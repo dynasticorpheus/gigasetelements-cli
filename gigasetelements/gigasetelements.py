@@ -32,6 +32,7 @@ parser.add_argument('-f', '--filter', help='filter events on type', required=Fal
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
+parser.add_argument('-t', '--monitor', help='show new events using monitor mode', action='store_true', required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
@@ -44,10 +45,9 @@ s = requests.Session()
 
 url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
-url_events = 'https://api.gigaset-elements.de/api/v1/me/events'
+url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 url_camera = 'https://api.gigaset-elements.de/api/v1/me/cameras'
-url_test = 'http://httpbin.org/status/503'
 
 
 class bcolors:
@@ -292,6 +292,28 @@ def list_events():
     return
 
 
+def monitor():
+    lastid = ''
+    newid = ''
+    if args.filter is None:
+        url_monitor = url_events + '?limit=1'
+    else:
+        url_monitor = url_events + '?limit=1&group=' + args.filter
+    log('Monitor mode | CTRL+C to exit')
+    try:
+        while True:
+            lastevent = restget(url_monitor)
+            item = lastevent['events']
+            newid = item[0]['id']
+            if lastid != newid:
+                print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item[0]['ts']) / 1000))) + ' ' + item[0]['type'] + ' ' + item[0]['o']['friendly_name']
+                lastid = newid
+            time.sleep(6)
+    except KeyboardInterrupt:
+        pass
+    return
+
+
 def sensor():
     print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
     for item in basestation_data[0]['sensors']:
@@ -367,6 +389,9 @@ def main():
             pass
         else:
             list_events()
+
+        if args.monitor:
+            monitor()
 
         print
 
