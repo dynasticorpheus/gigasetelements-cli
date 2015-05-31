@@ -48,6 +48,7 @@ url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 url_camera = 'https://api.gigaset-elements.de/api/v1/me/cameras'
+url_health = 'https://api.gigaset-elements.de/api/v2/me/health'
 
 
 class bcolors:
@@ -189,16 +190,18 @@ def connect():
     log(auth_data)
     basestation_data = restget(url_base)
     log('Basestation ' + basestation_data[0]['id'])
-    status_data = restget(url_events + '?limit=1')
+    status_data = restget(url_health)
+    if status_data['system_health'] == 'green':
+        status_data['status_msg_id'] = 'ok'
     if args.modus is None:
-        log('System status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+        log('System status ' + color(status_data['status_msg_id']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     return
 
 
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Status ' + color(status_data['home_state']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    log('Status ' + color(status_data['status_msg_id']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
 
@@ -376,14 +379,14 @@ def main():
         if args.modus is not None and args.cronjob is None:
             modus_switch()
             if args.sensor is not True:
-                pb_message('Status ' + status_data['home_state'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+                pb_message('Status ' + status_data['status_msg_id'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
 
         if args.camera:
             camera()
 
         if args.sensor:
             sensor()
-            pb_message('Status ' + status_data['home_state'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            pb_message('Status ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
         if args.events is None and args.date is None:
             pass
