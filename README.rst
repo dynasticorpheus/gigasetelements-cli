@@ -31,6 +31,8 @@ Features
  * List events and filter by type and/or date
  * Add and remove cronjobs for modus change at given time
  * Receive pushbullet messages on status and/or modus change
+ * Show camera info and expose video urls for external usage (e.g. VLC)
+ * Monitor mode showing live event stream
 
 Usage
 -----
