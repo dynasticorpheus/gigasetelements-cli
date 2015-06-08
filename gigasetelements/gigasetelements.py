@@ -28,7 +28,7 @@ parser.add_argument('-e', '--events', help='show last <number> of events', type=
 parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
 parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
 parser.add_argument('-r', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
-parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth'))
+parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
@@ -289,6 +289,9 @@ def list_events():
         event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
+            if item['type'].startswith('yc'):
+                item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:-7]
+                item['type'] = 'movement'
             print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
         except KeyError:
             continue
