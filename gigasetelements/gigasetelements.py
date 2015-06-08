@@ -290,8 +290,8 @@ def list_events():
     for item in event_data['events']:
         try:
             if item['type'].startswith('yc'):
-                item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:-7]
-                item['type'] = 'movement'
+                item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
+                item['type'] = item['type'][5:]
             print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
         except KeyError:
             continue
