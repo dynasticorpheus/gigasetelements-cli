@@ -308,21 +308,25 @@ def list_events():
 
 
 def monitor():
-    lastid = ''
-    newid = ''
     if args.filter is None:
-        url_monitor = url_events + '?limit=1'
+        url_monitor = url_events + '?limit=30'
     else:
-        url_monitor = url_events + '?limit=1&group=' + args.filter
+        url_monitor = url_events + '?limit=30&group=' + args.filter
     log('Monitor mode | CTRL+C to exit')
+    ids = set()
+    lastevents = restget(url_monitor)
+    for item in lastevents['events']:
+        ids.add(item['id'])
     try:
         while True:
-            lastevent = restget(url_monitor)
-            item = lastevent['events']
-            newid = item[0]['id']
-            if lastid != newid:
-                print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item[0]['ts']) / 1000))) + ' ' + item[0]['type'] + ' ' + item[0]['o']['friendly_name']
-                lastid = newid
+            lastevents = restget(url_monitor)
+            for item in lastevents['events']:
+                if item['id'] not in ids:
+                    if item['type'].startswith('yc'):
+                        item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
+                        item['type'] = item['type'][5:]
+                    print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
+                    ids.add(item['id'])
             time.sleep(6)
     except KeyboardInterrupt:
         pass
