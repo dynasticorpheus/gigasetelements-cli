@@ -298,7 +298,7 @@ def list_events():
         event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
-            if item['type'].startswith('homecoming'):
+            if 'friendly_name' not in item['o']:
                 item['o']['friendly_name'] = ' '
             if item['type'].startswith('yc'):
                 item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
@@ -325,7 +325,7 @@ def monitor():
             for item in lastevents['events']:
                 try:
                     if item['id'] not in ids:
-                        if item['type'].startswith('homecoming'):
+                        if 'friendly_name' not in item['o']:
                             item['o']['friendly_name'] = ' '
                         if item['type'].startswith('yc'):
                             item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
