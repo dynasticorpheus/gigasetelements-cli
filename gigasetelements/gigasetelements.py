@@ -298,6 +298,8 @@ def list_events():
         event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
+            if item['type'].startswith('homecoming'):
+                item['o']['friendly_name'] = ' '
             if item['type'].startswith('yc'):
                 item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
                 item['type'] = item['type'][5:]
@@ -321,12 +323,17 @@ def monitor():
         while True:
             lastevents = restget(url_monitor)
             for item in lastevents['events']:
-                if item['id'] not in ids:
-                    if item['type'].startswith('yc'):
-                        item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
-                        item['type'] = item['type'][5:]
-                    print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
-                    ids.add(item['id'])
+                try:
+                    if item['id'] not in ids:
+                        if item['type'].startswith('homecoming'):
+                            item['o']['friendly_name'] = ' '
+                        if item['type'].startswith('yc'):
+                            item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
+                            item['type'] = item['type'][5:]
+                        print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
+                        ids.add(item['id'])
+                except KeyError:
+                    continue
             time.sleep(6)
     except KeyboardInterrupt:
         pass
