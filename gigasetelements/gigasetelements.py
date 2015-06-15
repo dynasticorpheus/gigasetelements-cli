@@ -32,6 +32,7 @@ parser.add_argument('-f', '--filter', help='filter events on type', required=Fal
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
+parser.add_argument('-x', '--record', help='switch camera recording on/off', action='store_true', required=False)
 parser.add_argument('-t', '--monitor', help='show new events using monitor mode', action='store_true', required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
@@ -94,7 +95,7 @@ def os_type(str):
 
 
 def color(str):
-    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi']
+    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start']
     if str.lower() in normal:
         str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
     else:
@@ -357,7 +358,6 @@ def sensor():
 
 
 def camera():
-    global camera_data
     camera_data = restget(url_camera)
     if len(camera_data[0]['id']) == 12:
         for item in camera_data:
@@ -374,6 +374,20 @@ def camera():
         log('Camera stream 1 | m3u8 | ' + stream_data['uri']['m3u8'])
         log('Camera stream 2 | rtmp | ' + stream_data['uri']['rtmp'])
         log('Camera stream 3 | rtsp | ' + stream_data['uri']['rtsp'])
+    return
+
+
+def record():
+    camera_data = restget(url_camera)
+    if len(camera_data[0]['id']) != 12:
+        log('Camera not found', 3, 1)
+    camera_status = restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/status')
+    if camera_status['description'] == 'Recording not started':
+            restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/start')
+            log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('start'))
+    if camera_status['description'] == 'Recording already started':
+            restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/stop')
+            log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('stop'))
     return
 
 
@@ -416,6 +430,9 @@ def main():
             pass
         else:
             list_events()
+
+        if args.record:
+            record()
 
         if args.monitor:
             monitor()
