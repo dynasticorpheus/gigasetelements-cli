@@ -359,27 +359,28 @@ def sensor():
 
 def camera():
     camera_data = restget(url_camera)
-    if len(camera_data[0]['id']) == 12:
-        for item in camera_data:
-            try:
-                print('[-] ') + camera_data[0]['friendly_name'] + ' ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
-                print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
-                print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
-                if camera_data[0]['settings']['connection'] == 'wifi':
-                    print('| ssid ' + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC)
-            except KeyError:
-                print
-                continue
-        stream_data = restget(url_camera + '/' + camera_data[0]['id'] + '/liveview/start')
-        log('Camera stream 1 | m3u8 | ' + stream_data['uri']['m3u8'])
-        log('Camera stream 2 | rtmp | ' + stream_data['uri']['rtmp'])
-        log('Camera stream 3 | rtsp | ' + stream_data['uri']['rtsp'])
+    if 'id' not in camera_data[0] or len(camera_data[0]['id']) != 12:
+        log('Camera not found', 3, 1)
+    for item in camera_data:
+        try:
+            print('[-] ') + camera_data[0]['friendly_name'] + ' ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+            print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
+            print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
+            if camera_data[0]['settings']['connection'] == 'wifi':
+                print('| ssid ' + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC)
+        except KeyError:
+            print
+            continue
+    stream_data = restget(url_camera + '/' + camera_data[0]['id'] + '/liveview/start')
+    log('Camera stream 1 | m3u8 | ' + stream_data['uri']['m3u8'])
+    log('Camera stream 2 | rtmp | ' + stream_data['uri']['rtmp'])
+    log('Camera stream 3 | rtsp | ' + stream_data['uri']['rtsp'])
     return
 
 
 def record():
     camera_data = restget(url_camera)
-    if len(camera_data[0]['id']) != 12:
+    if 'id' not in camera_data[0] or len(camera_data[0]['id']) != 12:
         log('Camera not found', 3, 1)
     camera_status = restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
