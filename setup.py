@@ -12,7 +12,7 @@ with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
 
 setup(
     name='gigasetelements-cli',
-    version='1.3.2',
+    version='1.3.3',
     description='gigasetelements-cli allows you to control your \
     Gigaset Elements home security system from the command line.',
     long_description=long_description,

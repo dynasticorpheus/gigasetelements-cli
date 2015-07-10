@@ -17,7 +17,7 @@ from pushbullet import PushBullet
 
 
 _author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.3.2'
+_version_ = '1.3.3'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
