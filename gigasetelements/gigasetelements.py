@@ -299,13 +299,10 @@ def list_events():
         event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
-            if 'friendly_name' not in item['o']:
-                item['o']['friendly_name'] = ' '
-            if item['type'].startswith('yc'):
-                item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
-                item['type'] = item['type'][5:]
-            print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
+            if 'type' in item['o']:
+                print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type'])
         except KeyError:
+            print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['source_type']
             continue
     return
 
