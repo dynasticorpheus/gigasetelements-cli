@@ -50,7 +50,6 @@ url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 url_camera = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 url_health = 'https://api.gigaset-elements.de/api/v2/me/health'
-url_count = 'http://count.io/vb/dynasticorpheus/gigasetelements-cli+'
 
 
 class bcolors:
@@ -62,14 +61,6 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-
-
-def count():
-    try:
-        s.post(url_count)
-    except:
-        pass
-    return
 
 
 def log(str, type=0, exit=0):
@@ -395,7 +386,6 @@ def main():
         print 'Gigaset Elements - Command-line Interface'
         print
 
-        count()
         configure()
 
         if os_type('posix'):
