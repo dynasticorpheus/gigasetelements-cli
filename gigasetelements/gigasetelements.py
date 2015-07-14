@@ -314,14 +314,12 @@ def monitor():
             for item in lastevents['events']:
                 try:
                     if item['id'] not in ids:
-                        if 'friendly_name' not in item['o']:
-                            item['o']['friendly_name'] = ' '
-                        if item['type'].startswith('yc'):
-                            item['o']['friendly_name'] = item['o']['friendly_name'] + ' ' + item['type'][2:2 + 2]
-                            item['type'] = item['type'][5:]
-                        print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o']['friendly_name']
-                        ids.add(item['id'])
+                        if 'type' in item['o']:
+                            print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type'])
+                            ids.add(item['id'])
                 except KeyError:
+                    print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['source_type']
+                    ids.add(item['id'])
                     continue
             time.sleep(6)
     except KeyboardInterrupt:
