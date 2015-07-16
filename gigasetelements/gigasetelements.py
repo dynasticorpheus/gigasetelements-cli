@@ -30,6 +30,8 @@ parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (require
 parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
+parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
+parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
 parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
@@ -50,6 +52,8 @@ url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
 url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 url_camera = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 url_health = 'https://api.gigaset-elements.de/api/v2/me/health'
+url_device = 'https://api.gigaset-elements.de/api/v1/me/devices'
+url_channel = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 
 
 class bcolors:
@@ -86,7 +90,7 @@ def os_type(str):
 
 
 def color(str):
-    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start']
+    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active']
     if str.lower() in normal:
         str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
     else:
@@ -328,10 +332,10 @@ def monitor():
 
 
 def sensor():
-    print('[-] ') + basestation_data[0]['friendly_name'] + ' ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
+    print('[-] ') + basestation_data[0]['friendly_name'].ljust(16) + ' | ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
     for item in basestation_data[0]['sensors']:
         try:
-            print('[-] ') + item['friendly_name'] + ' ' + color(item['status']) + ' | firmware ' + color(item['firmware_status']),
+            print('[-] ') + item['friendly_name'].ljust(16) + ' | ' + color(item['status']) + ' | firmware ' + color(item['firmware_status']),
             if item['type'] != 'is01':
                 print '| battery ' + color(item['battery']['state']),
             if item['type'] == 'ds02':
@@ -343,13 +347,36 @@ def sensor():
     return
 
 
+def devices():
+    devices = restget(url_device)
+    for item in devices:
+        try:
+            log(item['friendly_name'].ljust(16) + ' | ' + item['type'] + ' | ' + item['_id'])
+        except KeyError:
+            continue
+    return
+
+
+def notifications():
+    channels = restget(url_channel)
+    for item in channels['gcm']:
+        try:
+            print('[-] ' + item['friendlyName'].ljust(16) + ' | ' + color(item['status']) + ' |'),
+            for item2 in item['notificationGroups']:
+                print item2,
+            print
+        except KeyError:
+            continue
+    return
+
+
 def camera():
     camera_data = restget(url_camera)
     if 'id' not in camera_data[0] or len(camera_data[0]['id']) != 12:
         log('Camera not found', 3, 1)
     for item in camera_data:
         try:
-            print('[-] ') + camera_data[0]['friendly_name'] + ' ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+            print('[-] ') + camera_data[0]['friendly_name'].ljust(16) + ' | ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
             print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
             print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
             if camera_data[0]['settings']['connection'] == 'wifi':
@@ -358,9 +385,9 @@ def camera():
             print
             continue
     stream_data = restget(url_camera + '/' + camera_data[0]['id'] + '/liveview/start')
-    log('Camera stream 1 | m3u8 | ' + stream_data['uri']['m3u8'])
-    log('Camera stream 2 | rtmp | ' + stream_data['uri']['rtmp'])
-    log('Camera stream 3 | rtsp | ' + stream_data['uri']['rtsp'])
+    log('Camera stream 1  | m3u8 | ' + stream_data['uri']['m3u8'])
+    log('Camera stream 2  | rtmp | ' + stream_data['uri']['rtmp'])
+    log('Camera stream 3  | rtsp | ' + stream_data['uri']['rtsp'])
     return
 
 
@@ -405,12 +432,18 @@ def main():
             if args.sensor is not True:
                 pb_message('Status ' + status_data['status_msg_id'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
 
-        if args.camera:
-            camera()
-
         if args.sensor:
             sensor()
             pb_message('Status ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+
+        if args.notifications:
+            notifications()
+
+        if args.camera:
+            camera()
+
+        if args.devices:
+            devices()
 
         if args.events is None and args.date is None:
             pass
