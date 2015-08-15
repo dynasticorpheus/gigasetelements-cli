@@ -192,7 +192,7 @@ def connect():
     s.headers['Connection'] = 'close'
     auth_data = restget(url_auth)
     s.headers['Connection'] = 'keep-alive'
-    log(auth_data)
+    log('Authenticated')
     basestation_data = restget(url_base)
     log('Basestation ' + basestation_data[0]['id'])
     status_data = restget(url_health)
