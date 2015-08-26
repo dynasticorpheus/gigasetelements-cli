@@ -32,7 +32,10 @@ Features
  * Add and remove cronjobs for modus change at given time
  * Receive pushbullet messages on status and/or modus change
  * Show camera info and expose video urls for external usage (e.g. VLC)
+ * Switch camera recording on/off
  * Monitor mode showing live event stream
+ * Show notification settings
+ * show registered mobile devices
 
 Usage
 -----
