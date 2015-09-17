@@ -35,7 +35,7 @@ Features
  * Switch camera recording on/off
  * Monitor mode showing live event stream
  * Show notification settings
- * show registered mobile devices
+ * Show registered mobile devices
 
 Usage
 -----
@@ -119,7 +119,9 @@ To do
 -----
 * Prepare for API V2
 * Replicate all functionality from app and/or website ... a long list
-* Improve overall code whilst I learn python
+* Support for gigaset elements plug
+* Support for gigaset elements button
+* Improve overall code
 
 
 Notes
