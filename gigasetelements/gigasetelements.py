@@ -90,9 +90,12 @@ def os_type(str):
 
 
 def color(str):
-    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green']
-    if str.lower() in normal:
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green']
+    orange = ['orange']
+    if str.lower() in green:
         str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
+    elif str.lower() in orange:
+        str = bcolors.WARN + str.upper() + bcolors.ENDC
     else:
         str = bcolors.FAIL + str.upper() + bcolors.ENDC
     return str
