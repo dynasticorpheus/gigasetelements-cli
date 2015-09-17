@@ -90,7 +90,7 @@ def os_type(str):
 
 
 def color(str):
-    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active']
+    normal = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green']
     if str.lower() in normal:
         str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
     else:
@@ -197,17 +197,15 @@ def connect():
     basestation_data = restget(url_base)
     log('Basestation ' + basestation_data[0]['id'])
     status_data = restget(url_health)
-    if status_data['system_health'] == 'green':
-        status_data['status_msg_id'] = 'ok'
     if args.modus is None:
-        log('System status ' + color(status_data['status_msg_id']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+        log('System status ' + color(status_data['system_health']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     return
 
 
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Status ' + color(status_data['status_msg_id']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    log('Status ' + color(status_data['system_health']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
 
@@ -431,11 +429,11 @@ def main():
         if args.modus is not None and args.cronjob is None:
             modus_switch()
             if args.sensor is not True:
-                pb_message('Status ' + status_data['status_msg_id'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+                pb_message('Status ' + status_data['system_health'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
 
         if args.sensor:
             sensor()
-            pb_message('Status ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            pb_message('Status ' + status_data['system_health'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
         if args.notifications:
             notifications()
