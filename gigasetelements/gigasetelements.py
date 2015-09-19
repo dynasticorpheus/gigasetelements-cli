@@ -200,8 +200,10 @@ def connect():
     basestation_data = restget(url_base)
     log('Basestation ' + basestation_data[0]['id'])
     status_data = restget(url_health)
+    if status_data['system_health'] == 'green':
+        status_data['status_msg_id'] = 'ok'
     if args.modus is None:
-        log('System status ' + color(status_data['system_health']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+        log('Status ' + color(status_data['system_health']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     return
 
 
@@ -436,7 +438,7 @@ def main():
 
         if args.sensor:
             sensor()
-            pb_message('Status ' + status_data['system_health'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            pb_message('Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
 
         if args.notifications:
             notifications()
