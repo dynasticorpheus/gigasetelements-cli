@@ -338,9 +338,9 @@ def sensor():
     for item in basestation_data[0]['sensors']:
         try:
             print('[-] ') + item['friendly_name'].ljust(16) + ' | ' + color(item['status']) + ' | firmware ' + color(item['firmware_status']),
-            if item['type'] != 'is01':
+            if item['type'] not in ['is01', 'sp01']:
                 print '| battery ' + color(item['battery']['state']),
-            if item['type'] == 'ds02':
+            if item['type'] in ['ds02', 'ds01']:
                 print '| position ' + color(item['position_status']),
             print
         except KeyError:
