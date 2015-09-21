@@ -201,7 +201,7 @@ def connect():
     log('Basestation ' + basestation_data[0]['id'])
     status_data = restget(url_health)
     if status_data['system_health'] == 'green':
-        status_data['status_msg_id'] = 'ok'
+        status_data['status_msg_id'] = u'\u2713'
     if args.modus is None:
         log('Status ' + color(status_data['system_health']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     return
