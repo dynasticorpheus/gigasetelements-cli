@@ -478,11 +478,11 @@ def main():
         if args.record:
             record()
 
-        if args.monitor:
-            monitor()
-
         if pb_body is not None:
             pb_message(pb_body)
+
+        if args.monitor:
+            monitor()
 
         print
 
