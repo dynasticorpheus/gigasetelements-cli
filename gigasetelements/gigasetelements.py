@@ -33,6 +33,7 @@ parser.add_argument('-m', '--modus', help='set modus', required=False, choices=(
 parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
 parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
+parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
 parser.add_argument('-t', '--monitor', help='show new events using monitor mode', action='store_true', required=False)
@@ -90,7 +91,7 @@ def os_type(str):
 
 
 def color(str):
-    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green']
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green', 'armed']
     orange = ['orange']
     if str.lower() in green:
         str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
@@ -211,6 +212,20 @@ def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Status ' + color(status_data['system_health']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    return
+
+
+def siren():
+    modus = ['home', 'away', 'custom']
+    if args.siren == 'disarm':
+        for m in modus:
+            switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": False}}]}}
+            restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
+    else:
+        for m in modus:
+            switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": True}}]}}
+            restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
+    log('Siren ' + color(args.siren + 'ed'))
     return
 
 
@@ -435,6 +450,9 @@ def main():
             modus_switch()
             if args.sensor is not True:
                 pb_message('Status ' + status_data['system_health'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+
+        if args.siren:
+            siren()
 
         if args.sensor:
             sensor()
