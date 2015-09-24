@@ -47,6 +47,8 @@ colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
+sensor_exist = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
+
 url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
@@ -186,6 +188,7 @@ def restpost(url, payload):
 def connect():
     global basestation_data
     global status_data
+    global camera_data
     if args.warning:
         try:
             requests.packages.urllib3.disable_warnings()
@@ -200,11 +203,21 @@ def connect():
     log('Authenticated')
     basestation_data = restget(url_base)
     log('Basestation ' + basestation_data[0]['id'])
+    camera_data = restget(url_camera)
     status_data = restget(url_health)
     if status_data['system_health'] == 'green':
         status_data['status_msg_id'] = u'\u2713'
     if args.modus is None:
         log('Status ' + color(status_data['system_health']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+    return
+
+
+def collect_hw():
+    for item in basestation_data[0]['sensors']:
+            if item['type'] in sensor_exist:
+                sensor_exist.update(dict.fromkeys([item['type']], True))
+    if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
+        sensor_exist.update(dict.fromkeys(['yc01'], True))
     return
 
 
@@ -225,7 +238,7 @@ def siren():
         for m in modus:
             switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": True}}]}}
             restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Siren ' + color(args.siren + 'ed'))
+    log('Siren  ' + color(args.siren + 'ed'))
     return
 
 
@@ -390,8 +403,7 @@ def notifications():
 
 
 def camera():
-    camera_data = restget(url_camera)
-    if 'id' not in camera_data[0] or len(camera_data[0]['id']) != 12:
+    if not sensor_exist['yc01']:
         log('Camera not found', 3, 1)
     for item in camera_data:
         try:
@@ -411,8 +423,7 @@ def camera():
 
 
 def record():
-    camera_data = restget(url_camera)
-    if 'id' not in camera_data[0] or len(camera_data[0]['id']) != 12:
+    if not sensor_exist['yc01']:
         log('Camera not found', 3, 1)
     camera_status = restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
@@ -448,6 +459,8 @@ def main():
                     sys.exit()
 
         connect()
+
+        collect_hw()
 
         if args.modus is not None and args.cronjob is None:
             modus_switch()
