@@ -229,6 +229,8 @@ def modus_switch():
 
 
 def siren():
+    if not sensor_exist['is01']:
+        log('Siren not found', 3, 1)
     modus = ['home', 'away', 'custom']
     if args.siren == 'disarm':
         for m in modus:
