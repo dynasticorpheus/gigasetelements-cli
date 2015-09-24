@@ -47,6 +47,8 @@ colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
+pb_body = None
+
 url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
@@ -449,14 +451,14 @@ def main():
         if args.modus is not None and args.cronjob is None:
             modus_switch()
             if args.sensor is not True:
-                pb_message('Status ' + status_data['system_health'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper())
+                pb_body = 'Status ' + status_data['system_health'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
 
         if args.siren:
             siren()
 
         if args.sensor:
             sensor()
-            pb_message('Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+            pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
 
         if args.notifications:
             notifications()
@@ -477,6 +479,9 @@ def main():
 
         if args.monitor:
             monitor()
+
+        if pb_body is not None:
+            pb_message(pb_body)
 
         print
 
