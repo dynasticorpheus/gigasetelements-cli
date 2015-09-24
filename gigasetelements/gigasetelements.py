@@ -47,8 +47,6 @@ colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
-pb_body = None
-
 url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
@@ -427,6 +425,9 @@ def record():
 
 
 def main():
+
+    pb_body = None
+
     try:
         print
         print 'Gigaset Elements - Command-line Interface'
