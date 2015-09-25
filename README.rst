@@ -36,6 +36,7 @@ Features
  * Monitor mode showing live event stream
  * Show notification settings
  * Show registered mobile devices
+ * Siren arming/disarming
 
 Usage
 -----
