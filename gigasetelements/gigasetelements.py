@@ -215,24 +215,24 @@ def connect():
 
 def collect_hw():
     for item in basestation_data[0]['sensors']:
-            if item['type'] in sensor_id:
-                sensor_id.update(dict.fromkeys([item['type']], True))
+        if item['type'] in sensor_id:
+            sensor_id.update(dict.fromkeys([item['type']], True))
     if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
         sensor_id.update(dict.fromkeys(['yc01'], True))
     if sensor_id['is01']:
-         sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
+        sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
     if sensor_id['sp01']:
-         sensor_exist.update(dict.fromkeys(['smart_plug'], True))
+        sensor_exist.update(dict.fromkeys(['smart_plug'], True))
     if sensor_id['bt01']:
-         sensor_exist.update(dict.fromkeys(['button'], True))
+        sensor_exist.update(dict.fromkeys(['button'], True))
     if sensor_id['yc01']:
-         sensor_exist.update(dict.fromkeys(['camera'], True))
+        sensor_exist.update(dict.fromkeys(['camera'], True))
     if sensor_id['ws02']:
-         sensor_exist.update(dict.fromkeys(['window_sensor'], True))
+        sensor_exist.update(dict.fromkeys(['window_sensor'], True))
     if sensor_id['ps01'] or sensor_id['ps02']:
-         sensor_exist.update(dict.fromkeys(['presence_sensor'], True))
+        sensor_exist.update(dict.fromkeys(['presence_sensor'], True))
     if sensor_id['ds01'] or sensor_id['ds02']:
-         sensor_exist.update(dict.fromkeys(['door_sensor'], True))
+        sensor_exist.update(dict.fromkeys(['door_sensor'], True))
     return
 
 
@@ -444,11 +444,11 @@ def record():
         log('Camera not found', 3, 1)
     camera_status = restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
-            restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/start')
-            log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('start'))
+        restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/start')
+        log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('start'))
     if camera_status['description'] == 'Recording already started':
-            restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/stop')
-            log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('stop'))
+        restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/stop')
+        log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('stop'))
     return
 
 
