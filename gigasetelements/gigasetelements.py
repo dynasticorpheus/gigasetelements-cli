@@ -1,6 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import imp
+
+"""Main code for gigasetelements command-line interface."""
+
+
 import gc
 import os
 import sys
@@ -73,13 +77,13 @@ class bcolors:
 
 def log(str, type=0, exit=0):
     if type == 0:
-        print '[-] ' + str
+        print '[-] ' + str.encode('utf-8')
     if type == 1:
-        print bcolors.OKGREEN + '[-] ' + str + bcolors.ENDC
+        print bcolors.OKGREEN + '[-] ' + str.encode('utf-8') + bcolors.ENDC
     if type == 2:
-        print bcolors.WARN + '[-] ' + str + bcolors.ENDC
+        print bcolors.WARN + '[-] ' + str.encode('utf-8') + bcolors.ENDC
     if type == 3:
-        print bcolors.FAIL + '[-] ' + str + bcolors.ENDC
+        print bcolors.FAIL + '[-] ' + str.encode('utf-8') + bcolors.ENDC
     if exit == 1:
         print
         sys.exit()
@@ -209,7 +213,7 @@ def connect():
     if status_data['system_health'] == 'green':
         status_data['status_msg_id'] = u'\u2713'
     if args.modus is None:
-        log('Status ' + color(status_data['system_health']) + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+        log('Status ' + color(status_data['system_health']) + ' | ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
     return
 
 
