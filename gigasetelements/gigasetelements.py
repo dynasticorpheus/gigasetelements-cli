@@ -47,7 +47,8 @@ colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
-sensor_exist = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
+sensor_id = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
+sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug'], False)
 
 url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
@@ -214,10 +215,24 @@ def connect():
 
 def collect_hw():
     for item in basestation_data[0]['sensors']:
-            if item['type'] in sensor_exist:
-                sensor_exist.update(dict.fromkeys([item['type']], True))
+            if item['type'] in sensor_id:
+                sensor_id.update(dict.fromkeys([item['type']], True))
     if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
-        sensor_exist.update(dict.fromkeys(['yc01'], True))
+        sensor_id.update(dict.fromkeys(['yc01'], True))
+    if sensor_id['is01']:
+         sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
+    if sensor_id['sp01']:
+         sensor_exist.update(dict.fromkeys(['smart_plug'], True))
+    if sensor_id['bt01']:
+         sensor_exist.update(dict.fromkeys(['button'], True))
+    if sensor_id['yc01']:
+         sensor_exist.update(dict.fromkeys(['camera'], True))
+    if sensor_id['ws02']:
+         sensor_exist.update(dict.fromkeys(['window_sensor'], True))
+    if sensor_id['ps01'] or sensor_id['ps02']:
+         sensor_exist.update(dict.fromkeys(['presence_sensor'], True))
+    if sensor_id['ds01'] or sensor_id['ds02']:
+         sensor_exist.update(dict.fromkeys(['door_sensor'], True))
     return
 
 
@@ -229,7 +244,7 @@ def modus_switch():
 
 
 def siren():
-    if not sensor_exist['is01']:
+    if not sensor_exist['indoor_siren']:
         log('Siren not found', 3, 1)
     modus = ['home', 'away', 'custom']
     if args.siren == 'disarm':
@@ -404,8 +419,8 @@ def notifications():
     return
 
 
-def camera():
-    if not sensor_exist['yc01']:
+def camera_info():
+    if not sensor_exist['camera']:
         log('Camera not found', 3, 1)
     for item in camera_data:
         try:
@@ -425,7 +440,7 @@ def camera():
 
 
 def record():
-    if not sensor_exist['yc01']:
+    if not sensor_exist['camera']:
         log('Camera not found', 3, 1)
     camera_status = restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
@@ -480,7 +495,7 @@ def main():
             notifications()
 
         if args.camera:
-            camera()
+            camera_info()
 
         if args.devices:
             devices()
