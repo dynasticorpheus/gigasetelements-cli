@@ -393,7 +393,7 @@ def devices():
 
 def notifications():
     channels = restget(url_channel)
-    for item in channels['gcm']:
+    for item in channels.get('gcm', ''):
         try:
             print('[-] ' + item['friendlyName'].ljust(16) + ' | ' + color(item['status']) + ' |'),
             for item2 in item['notificationGroups']:
