@@ -20,8 +20,8 @@ from crontab import CronTab
 from pushbullet import PushBullet
 
 
-_author_ = 'dynasticorpheus@gmail.com'
-_version_ = '1.3.4'
+_AUTHOR_ = 'dynasticorpheus@gmail.com'
+_VERSION_ = '1.3.4'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -44,24 +44,21 @@ parser.add_argument('-t', '--monitor', help='show new events using monitor mode'
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
-parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_version_))
+parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
 gc.disable()
 colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
-sensor_id = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
-sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug'], False)
-
-url_identity = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
-url_auth = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
-url_events = 'https://api.gigaset-elements.de/api/v2/me/events'
-url_base = 'https://api.gigaset-elements.de/api/v1/me/basestations'
-url_camera = 'https://api.gigaset-elements.de/api/v1/me/cameras'
-url_health = 'https://api.gigaset-elements.de/api/v2/me/health'
-url_device = 'https://api.gigaset-elements.de/api/v1/me/devices'
-url_channel = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
+URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
+URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
+URL_EVENTS = 'https://api.gigaset-elements.de/api/v2/me/events'
+URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
+URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
+URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
+URL_DEVICE = 'https://api.gigaset-elements.de/api/v1/me/devices'
+URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 
 
 class bcolors:
@@ -200,16 +197,16 @@ def connect():
         except:
             pass
     payload = {'password': args.password, 'email': args.username}
-    commit_data = restpost(url_identity, payload)
+    commit_data = restpost(URL_IDENTITY, payload)
     log(commit_data['message'])
     s.headers['Connection'] = 'close'
-    auth_data = restget(url_auth)
+    restget(URL_AUTH)
     s.headers['Connection'] = 'keep-alive'
     log('Authenticated')
-    basestation_data = restget(url_base)
+    basestation_data = restget(URL_BASE)
     log('Basestation ' + basestation_data[0]['id'])
-    camera_data = restget(url_camera)
-    status_data = restget(url_health)
+    camera_data = restget(URL_CAMERA)
+    status_data = restget(URL_HEALTH)
     if status_data['system_health'] == 'green':
         status_data['status_msg_id'] = u'\u2713'
     if args.modus is None:
@@ -218,6 +215,10 @@ def connect():
 
 
 def collect_hw():
+    global sensor_id
+    global sensor_exist
+    sensor_id = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
+    sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug'], False)
     for item in basestation_data[0]['sensors']:
         if item['type'] in sensor_id:
             sensor_id.update(dict.fromkeys([item['type']], True))
@@ -242,7 +243,7 @@ def collect_hw():
 
 def modus_switch():
     switch = {'intrusion_settings': {'active_mode': args.modus}}
-    restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
+    restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Status ' + color(status_data['system_health']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
@@ -254,16 +255,16 @@ def siren():
     if args.siren == 'disarm':
         for m in modus:
             switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": False}}]}}
-            restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
+            restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     else:
         for m in modus:
             switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": True}}]}}
-            restpost(url_base + '/' + basestation_data[0]['id'], json.dumps(switch))
+            restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Siren  ' + color(args.siren + 'ed'))
     return
 
 
-def isTimeFormat(input):
+def istimeformat(input):
     try:
         time.strptime(input, '%H:%M')
         return True
@@ -274,7 +275,7 @@ def isTimeFormat(input):
 def add_cron(schedule):
     if args.modus is None:
         log('Please also specify modus using -m option to schedule cron job', 3, 1)
-    if isTimeFormat(args.cronjob):
+    if istimeformat(args.cronjob):
         cron = CronTab(user=True)
         now = datetime.datetime.now()
         timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
@@ -329,10 +330,10 @@ def pb_message(pbmsg):
 def list_events():
     if args.filter is None and args.date is None:
         log('Showing last ' + str(args.events) + ' event(s)')
-        event_data = restget(url_events + '?limit=' + str(args.events))
+        event_data = restget(URL_EVENTS + '?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
         log('Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)')
-        event_data = restget(url_events + '?limit=' + str(args.events) + '&group=' + str(args.filter))
+        event_data = restget(URL_EVENTS + '?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
@@ -341,10 +342,10 @@ def list_events():
             log('Please provide date(s) in DD/MM/YYYY format', 3, 1)
     if args.filter is None and args.date is not None:
         log('Showing event(s) between ' + args.date[0] + ' and ' + args.date[1])
-        event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
+        event_data = restget(URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
         log('Showing ' + str(args.filter).upper() + ' event(s) between ' + args.date[0] + ' and ' + args.date[1])
-        event_data = restget(url_events + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
+        event_data = restget(URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
             if 'type' in item['o']:
@@ -357,9 +358,9 @@ def list_events():
 
 def monitor():
     if args.filter is None:
-        url_monitor = url_events + '?limit=30'
+        url_monitor = URL_EVENTS + '?limit=30'
     else:
-        url_monitor = url_events + '?limit=30&group=' + args.filter
+        url_monitor = URL_EVENTS + '?limit=30&group=' + args.filter
     log('Monitor mode | CTRL+C to exit')
     ids = set()
     lastevents = restget(url_monitor)
@@ -401,7 +402,7 @@ def sensor():
 
 
 def devices():
-    devices = restget(url_device)
+    devices = restget(URL_DEVICE)
     for item in devices:
         try:
             log(item['friendly_name'].ljust(16) + ' | ' + item['type'] + ' | ' + item['_id'])
@@ -411,7 +412,7 @@ def devices():
 
 
 def notifications():
-    channels = restget(url_channel)
+    channels = restget(URL_CHANNEL)
     for item in channels.get('gcm', ''):
         try:
             print('[-] ' + item['friendlyName'].ljust(16) + ' | ' + color(item['status']) + ' |'),
@@ -432,11 +433,11 @@ def camera_info():
             print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
             print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
             if camera_data[0]['settings']['connection'] == 'wifi':
-                print('| ssid ' + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC)
+                print('| ssid ') + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC
         except KeyError:
             print
             continue
-    stream_data = restget(url_camera + '/' + camera_data[0]['id'] + '/liveview/start')
+    stream_data = restget(URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
     log('Camera stream 1  | m3u8 | ' + stream_data['uri']['m3u8'])
     log('Camera stream 2  | rtmp | ' + stream_data['uri']['rtmp'])
     log('Camera stream 3  | rtsp | ' + stream_data['uri']['rtsp'])
@@ -446,12 +447,12 @@ def camera_info():
 def record():
     if not sensor_exist['camera']:
         log('Camera not found', 3, 1)
-    camera_status = restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/status')
+    camera_status = restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
-        restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/start')
+        restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/start')
         log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('start'))
     if camera_status['description'] == 'Recording already started':
-        restget(url_camera + '/' + str(camera_data[0]['id']) + '/recording/stop')
+        restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/stop')
         log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('stop'))
     return
 
