@@ -73,6 +73,7 @@ class bcolors:
 
 
 def log(str, type=0, exit=0):
+    """Print output in selected color and provide program exit on critical error."""
     if type == 0:
         print '[-] ' + str.encode('utf-8')
     if type == 1:
@@ -88,6 +89,7 @@ def log(str, type=0, exit=0):
 
 
 def os_type(str):
+    """Validate under which OS the program is running."""
     if os.name == str:
         return True
     else:
@@ -95,6 +97,7 @@ def os_type(str):
 
 
 def color(str):
+    """Add color to string based on presence in list and return in uppercase."""
     green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green', 'armed']
     orange = ['orange']
     if str.lower() in green:
@@ -107,6 +110,7 @@ def color(str):
 
 
 def configure():
+    """Load variables based on command line arguments and config file."""
     global credfromfile
     credfromfile = False
     if args.config is None:
@@ -154,6 +158,7 @@ def configure():
 
 
 def is_json(myjson):
+    """Validate if object is in json format."""
     try:
         json_object = json.loads(myjson)
     except ValueError, e:
@@ -162,6 +167,7 @@ def is_json(myjson):
 
 
 def restget(url):
+    """REST interaction using GET."""
     data = ''
     try:
         r = s.get(url, timeout=90, stream=False)
@@ -177,6 +183,7 @@ def restget(url):
 
 
 def restpost(url, payload):
+    """REST interaction using POST."""
     try:
         r = s.post(url, data=payload, timeout=90, stream=False)
     except requests.exceptions.RequestException as e:
@@ -188,6 +195,7 @@ def restpost(url, payload):
 
 
 def connect():
+    """Gigaset Elements API authentication and status retrieval."""
     global basestation_data
     global status_data
     global camera_data
@@ -215,6 +223,7 @@ def connect():
 
 
 def collect_hw():
+    """Retrieve sensor list and details."""
     global sensor_id
     global sensor_exist
     sensor_id = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
@@ -242,6 +251,7 @@ def collect_hw():
 
 
 def modus_switch():
+    """Switch alarm modus."""
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Status ' + color(status_data['system_health']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
@@ -249,6 +259,7 @@ def modus_switch():
 
 
 def siren():
+    """Dis(arm) siren."""
     if not sensor_exist['indoor_siren']:
         log('Siren not found', 3, 1)
     modus = ['home', 'away', 'custom']
@@ -265,6 +276,7 @@ def siren():
 
 
 def istimeformat(input):
+    """Validate if string has correct time format."""
     try:
         time.strptime(input, '%H:%M')
         return True
@@ -273,6 +285,7 @@ def istimeformat(input):
 
 
 def add_cron(schedule):
+    """Add job to crontab to set alarm modus."""
     if args.modus is None:
         log('Please also specify modus using -m option to schedule cron job', 3, 1)
     if istimeformat(args.cronjob):
@@ -299,6 +312,7 @@ def add_cron(schedule):
 
 
 def remove_cron():
+    """Remove all jobs from crontab setting alarm modus."""
     cron = CronTab(user=True)
     iter = cron.find_command('gigasetelements-cli')
     count = 0
@@ -314,6 +328,7 @@ def remove_cron():
 
 
 def pb_message(pbmsg):
+    """Send message using pushbullet module."""
     if args.notify is not None and args.quiet is not True:
         try:
             pb = PushBullet(args.notify)
@@ -328,6 +343,7 @@ def pb_message(pbmsg):
 
 
 def list_events():
+    """List past events optionally filtered by date and/or type."""
     if args.filter is None and args.date is None:
         log('Showing last ' + str(args.events) + ' event(s)')
         event_data = restget(URL_EVENTS + '?limit=' + str(args.events))
@@ -357,6 +373,7 @@ def list_events():
 
 
 def monitor():
+    """List events realtime optionally filtered by date and/or type."""
     if args.filter is None:
         url_monitor = URL_EVENTS + '?limit=30'
     else:
@@ -386,6 +403,7 @@ def monitor():
 
 
 def sensor():
+    """Show sensor details and current state."""
     print('[-] ') + basestation_data[0]['friendly_name'].ljust(16) + ' | ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
     for item in basestation_data[0]['sensors']:
         try:
@@ -402,6 +420,7 @@ def sensor():
 
 
 def devices():
+    """List registered mobile device(s)."""
     devices = restget(URL_DEVICE)
     for item in devices:
         try:
@@ -412,6 +431,7 @@ def devices():
 
 
 def notifications():
+    """List notification settings per mobile device."""
     channels = restget(URL_CHANNEL)
     for item in channels.get('gcm', ''):
         try:
@@ -425,6 +445,7 @@ def notifications():
 
 
 def camera_info():
+    """Show camera details and current state."""
     if not sensor_exist['camera']:
         log('Camera not found', 3, 1)
     for item in camera_data:
@@ -445,6 +466,7 @@ def camera_info():
 
 
 def record():
+    """Start or stop camera recording based on current state."""
     if not sensor_exist['camera']:
         log('Camera not found', 3, 1)
     camera_status = restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/status')
@@ -458,6 +480,7 @@ def record():
 
 
 def main():
+    """Main program."""
 
     pb_body = None
 
