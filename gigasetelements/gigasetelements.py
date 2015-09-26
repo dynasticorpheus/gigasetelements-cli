@@ -62,6 +62,7 @@ URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/cha
 
 
 class bcolors:
+    """Define color classes."""
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
