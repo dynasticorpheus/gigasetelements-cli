@@ -449,20 +449,17 @@ def camera_info():
     """Show camera details and current state."""
     if not sensor_exist['camera']:
         log('Camera not found', 3, 1)
-    for item in camera_data:
-        try:
-            print('[-] ') + camera_data[0]['friendly_name'].ljust(16) + ' | ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
-            print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
-            print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
-            if camera_data[0]['settings']['connection'] == 'wifi':
-                print('| ssid ') + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC
-        except KeyError:
-            print
-            continue
+    try:
+        print('[-] ') + camera_data[0]['friendly_name'].ljust(16) + ' | ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+        print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
+        print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
+        if camera_data[0]['settings']['connection'] == 'wifi':
+            print('| ssid ') + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC
+    except KeyError:
+        print
     stream_data = restget(URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
-    log('Camera stream 1  | m3u8 | ' + stream_data['uri']['m3u8'])
-    log('Camera stream 2  | rtmp | ' + stream_data['uri']['rtmp'])
-    log('Camera stream 3  | rtsp | ' + stream_data['uri']['rtsp'])
+    for stream in ('m3u8', 'rtmp', 'rtsp'):
+        log('Camera stream    | ' + stream + '   | ' + stream_data['uri'][stream])
     return
 
 
