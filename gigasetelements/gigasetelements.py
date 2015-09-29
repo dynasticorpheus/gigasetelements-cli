@@ -73,41 +73,41 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def log(str, type=0, exit=0):
+def log(logme, rbg=0, exitnow=0):
     """Print output in selected color and provide program exit on critical error."""
-    if type == 0:
-        print '[-] ' + str.encode('utf-8')
-    if type == 1:
-        print bcolors.OKGREEN + '[-] ' + str.encode('utf-8') + bcolors.ENDC
-    if type == 2:
-        print bcolors.WARN + '[-] ' + str.encode('utf-8') + bcolors.ENDC
-    if type == 3:
-        print bcolors.FAIL + '[-] ' + str.encode('utf-8') + bcolors.ENDC
-    if exit == 1:
+    if rbg == 0:
+        print '[-] ' + logme.encode('utf-8')
+    if rbg == 1:
+        print bcolors.OKGREEN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+    if rbg == 2:
+        print bcolors.WARN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+    if rbg == 3:
+        print bcolors.FAIL + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+    if exitnow == 1:
         print
         sys.exit()
     return
 
 
-def os_type(str):
+def os_type(ostype):
     """Validate under which OS the program is running."""
-    if os.name == str:
+    if os.name == ostype:
         return True
     else:
         return False
 
 
-def color(str):
+def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
     green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green', 'armed']
     orange = ['orange']
-    if str.lower() in green:
-        str = bcolors.OKGREEN + str.upper() + bcolors.ENDC
-    elif str.lower() in orange:
-        str = bcolors.WARN + str.upper() + bcolors.ENDC
+    if txt.lower() in green:
+        txt = bcolors.OKGREEN + txt.upper() + bcolors.ENDC
+    elif txt.lower() in orange:
+        txt = bcolors.WARN + txt.upper() + bcolors.ENDC
     else:
-        str = bcolors.FAIL + str.upper() + bcolors.ENDC
-    return str
+        txt = bcolors.FAIL + txt.upper() + bcolors.ENDC
+    return txt
 
 
 def configure():
@@ -162,7 +162,7 @@ def is_json(myjson):
     """Validate if object is in json format."""
     try:
         json_object = json.loads(myjson)
-    except ValueError, e:
+    except ValueError:
         return False
     return True
 
@@ -276,16 +276,16 @@ def siren():
     return
 
 
-def istimeformat(input):
+def istimeformat(timestr):
     """Validate if string has correct time format."""
     try:
-        time.strptime(input, '%H:%M')
+        time.strptime(timestr, '%H:%M')
         return True
     except ValueError:
         return False
 
 
-def add_cron(schedule):
+def add_cron():
     """Add job to crontab to set alarm modus."""
     if args.modus is None:
         log('Please also specify modus using -m option to schedule cron job', 3, 1)
@@ -315,9 +315,9 @@ def add_cron(schedule):
 def remove_cron():
     """Remove all jobs from crontab setting alarm modus."""
     cron = CronTab(user=True)
-    iter = cron.find_command('gigasetelements-cli')
+    existing = cron.find_command('gigasetelements-cli')
     count = 0
-    for i in iter:
+    for i in existing:
         log('Cron job removed | ' + str(i))
         count = count + 1
     cron.remove_all('gigasetelements-cli')
@@ -338,7 +338,7 @@ def pb_message(pbmsg):
         except pushbullet.errors.PushbulletError:
             log('Pushbullet notification not sent due to unknown error', 2)
         else:
-            push = pb.push_note('Gigaset Elements', pbmsg)
+            pb.push_note('Gigaset Elements', pbmsg)
             log('PushBullet notification sent')
     return
 
@@ -494,7 +494,7 @@ def main():
 
         if os_type('posix'):
             if args.cronjob is not None:
-                add_cron(args.cronjob)
+                add_cron()
                 if args.sensor is False and args.events is None:
                     print
                     sys.exit()
