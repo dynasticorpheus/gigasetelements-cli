@@ -7,6 +7,9 @@ It comes with an easy to use CLI (command-line interface) suitable for direct us
 .. image:: https://weblog.bol.com/wp-content/uploads/2015/04/gigaset-elements.jpg
     :target: https://www.gigaset-elements.com
 
+.. image:: https://lh4.googleusercontent.com/-HSMeNH_DbH4/VgTvdvXmXWI/AAAAAAAAMV4/-aGdQs8peco/w1243-h424-no/gigasetelements-cli.png
+    :target: https://plus.google.com/communities/108042802009267082650
+
 Installation
 ------------
 
