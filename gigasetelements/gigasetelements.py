@@ -203,7 +203,7 @@ def connect():
     if args.warning:
         try:
             requests.packages.urllib3.disable_warnings()
-        except:
+        except Exception:
             pass
     payload = {'password': args.password, 'email': args.username}
     commit_data = restpost(URL_IDENTITY, payload)
@@ -355,7 +355,7 @@ def list_events():
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
             to_ts = str(int(time.mktime(time.strptime(args.date[1], '%d/%m/%Y'))) * 1000)
-        except:
+        except Exception:
             log('Please provide date(s) in DD/MM/YYYY format', 3, 1)
     if args.filter is None and args.date is not None:
         log('Showing event(s) between ' + args.date[0] + ' and ' + args.date[1])
@@ -422,8 +422,8 @@ def sensor():
 
 def devices():
     """List registered mobile device(s)."""
-    devices = restget(URL_DEVICE)
-    for item in devices:
+    device = restget(URL_DEVICE)
+    for item in device:
         try:
             log(item['friendly_name'].ljust(16) + ' | ' + item['type'] + ' | ' + item['_id'])
         except KeyError:
