@@ -59,6 +59,7 @@ URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_DEVICE = 'https://api.gigaset-elements.de/api/v1/me/devices'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
+URL_USAGE = 'https://goo.gl/S66QUI'
 
 
 class bcolors:
@@ -167,11 +168,15 @@ def is_json(myjson):
     return True
 
 
-def restget(url):
-    """REST interaction using GET."""
+def restget(url, head=0, seconds=90):
+    """REST interaction using GET or HEAD."""
     data = ''
     try:
-        r = s.get(url, timeout=90, stream=False)
+        if head == 1:
+            header = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
+            r = s.head(url, timeout=seconds, headers=header, allow_redirects=True)
+        else:
+            r = s.get(url, timeout=seconds, stream=False)
     except requests.exceptions.RequestException as e:
         log(str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
@@ -212,6 +217,7 @@ def connect():
     restget(URL_AUTH)
     s.headers['Connection'] = 'keep-alive'
     log('Authenticated')
+    restget(URL_USAGE, 1, 3)
     basestation_data = restget(URL_BASE)
     log('Basestation ' + basestation_data[0]['id'])
     camera_data = restget(URL_CAMERA)
