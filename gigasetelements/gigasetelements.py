@@ -238,8 +238,11 @@ def collect_hw():
     for item in basestation_data[0]['sensors']:
         if item['type'] in sensor_id:
             sensor_id.update(dict.fromkeys([item['type']], True))
-    if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
-        sensor_id.update(dict.fromkeys(['yc01'], True))
+    try:
+        if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
+            sensor_id.update(dict.fromkeys(['yc01'], True))
+    except IndexError:
+        pass
     if sensor_id['is01']:
         sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
     if sensor_id['sp01']:
