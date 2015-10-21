@@ -463,7 +463,7 @@ def camera_info():
         print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
         print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
         if camera_data[0]['settings']['connection'] == 'wifi':
-            print('| ssid ') + bcolors.OKGREEN + camera_data[0]['wifi_ssid'] + bcolors.ENDC
+            print('| ssid ') + bcolors.OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + bcolors.ENDC
     except KeyError:
         print
     stream_data = restget(URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
