@@ -36,6 +36,7 @@ parser.add_argument('-f', '--filter', help='filter events on type', required=Fal
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
+parser.add_argument('-l', '--rules', help='show custom rules', action='store_true', required=False)
 parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
@@ -440,6 +441,29 @@ def devices():
     return
 
 
+def rules():
+    """List custom rule(s)."""
+    rules = restget(URL_BASE + '/' + basestation_data[0]['id'] + '/rules?rules=custom')
+    for item in rules:
+        try:
+            if item['active']:
+                item['active'] = 'On'
+            else:
+                item['active'] = 'Off'
+            if item['parameter']['start_time'] == 0 and item['parameter']['end_time'] == 86400:
+                timer = '00:00 - 00:00'.ljust(13)
+            else:
+                timer = str(datetime.timedelta(seconds=int(item['parameter']['start_time']))).rjust(8, '0')[0:5] + ' - ' + str(datetime.timedelta(seconds=int(item['parameter']['end_time']))).rjust(8, '0')[0:5]
+            if item['parameter']['repeater']['frequency'] == 'daily':
+                days = '1, 2, 3, 4, 5, 6, 7'
+            else:
+                days = str(item['parameter']['repeater']['at']).replace('[', '').replace(']', '').ljust(19)
+            log(item['friendly_name'].ljust(16) + ' | ' + color(item['active']).ljust(12) + ' | ' + item['parameter']['repeater']['frequency'].ljust(7) + ' | ' + timer + ' | ' + days + ' | ' + item['recipe'].replace('_', ' ') + ' | ' + item['id'])
+        except KeyError:
+            continue
+    return
+
+
 def notifications():
     """List notification settings per mobile device."""
     channels = restget(URL_CHANNEL)
@@ -528,6 +552,9 @@ def main():
 
         if args.notifications:
             notifications()
+
+        if args.rules:
+            rules()
 
         if args.camera:
             camera_info()
