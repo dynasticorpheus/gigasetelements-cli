@@ -17,7 +17,7 @@ import ConfigParser
 import requests
 import colorama
 from crontab import CronTab
-from pushbullet import PushBullet
+from pushbullet import PushBullet, InvalidKeyError, PushbulletError
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
@@ -32,13 +32,14 @@ parser.add_argument('-e', '--events', help='show last <number> of events', type=
 parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
 parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
 parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
-parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
+parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'plug', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
 parser.add_argument('-l', '--rules', help='show custom rules', action='store_true', required=False)
 parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
+parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
 parser.add_argument('-t', '--monitor', help='show new events using monitor mode', action='store_true', required=False)
@@ -101,11 +102,11 @@ def os_type(ostype):
 
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
-    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'start', 'active', 'green', 'armed']
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
     orange = ['orange']
-    if txt.lower() in green:
+    if txt.lower().strip() in green:
         txt = bcolors.OKGREEN + txt.upper() + bcolors.ENDC
-    elif txt.lower() in orange:
+    elif txt.lower().strip() in orange:
         txt = bcolors.WARN + txt.upper() + bcolors.ENDC
     else:
         txt = bcolors.FAIL + txt.upper() + bcolors.ENDC
@@ -129,7 +130,7 @@ def configure():
         if os.path.exists(args.config) == False:
             log('File does not exist ' + args.config, 3, 1)
     if args.config is not None:
-        log('Reading configuration from ' + args.config)
+        log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
         config = ConfigParser.ConfigParser()
         config.read(args.config)
         if args.username is None:
@@ -213,50 +214,58 @@ def connect():
             pass
     payload = {'password': args.password, 'email': args.username}
     commit_data = restpost(URL_IDENTITY, payload)
-    log(commit_data['message'])
+    log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
     s.headers['Connection'] = 'close'
     restget(URL_AUTH)
     s.headers['Connection'] = 'keep-alive'
-    log('Authenticated')
+    log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
     restget(URL_USAGE, 1, 3)
     basestation_data = restget(URL_BASE)
-    log('Basestation ' + basestation_data[0]['id'])
+    log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
     camera_data = restget(URL_CAMERA)
     status_data = restget(URL_HEALTH)
     if status_data['system_health'] == 'green':
-        status_data['status_msg_id'] = u'\u2713'
+        status_data['status_msg_id'] = ''
+    else:
+        status_data['status_msg_id'] = ' | ' + status_data['status_msg_id']
     if args.modus is None:
-        log('Status ' + color(status_data['system_health']) + ' | ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper())
+        log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
     return
 
 
 def collect_hw():
     """Retrieve sensor list and details."""
     global sensor_id
+    global sensor_type
     global sensor_exist
-    sensor_id = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
+    sensor_id = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], None)
+    sensor_type = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
     sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug'], False)
     for item in basestation_data[0]['sensors']:
+        if item['type'] in sensor_type:
+            sensor_type.update(dict.fromkeys([item['type']], True))
+    for item in basestation_data[0]['sensors']:
         if item['type'] in sensor_id:
-            sensor_id.update(dict.fromkeys([item['type']], True))
+            sensor_id.update(dict.fromkeys([item['type']], item['id']))
     try:
         if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
-            sensor_id.update(dict.fromkeys(['yc01'], True))
+            sensor_type.update(dict.fromkeys(['yc01'], True))
+            sensor_id.update(dict.fromkeys(['yc01'], camera_data[0]['id']))
     except IndexError:
         pass
-    if sensor_id['is01']:
+    if sensor_type['is01']:
         sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
-    if sensor_id['sp01']:
+    if sensor_type['sp01']:
         sensor_exist.update(dict.fromkeys(['smart_plug'], True))
-    if sensor_id['bt01']:
+    if sensor_type['bt01']:
         sensor_exist.update(dict.fromkeys(['button'], True))
-    if sensor_id['yc01']:
+    if sensor_type['yc01']:
         sensor_exist.update(dict.fromkeys(['camera'], True))
-    if sensor_id['ws02']:
+    if sensor_type['ws02']:
         sensor_exist.update(dict.fromkeys(['window_sensor'], True))
-    if sensor_id['ps01'] or sensor_id['ps02']:
+    if sensor_type['ps01'] or sensor_type['ps02']:
         sensor_exist.update(dict.fromkeys(['presence_sensor'], True))
-    if sensor_id['ds01'] or sensor_id['ds02']:
+    if sensor_type['ds01'] or sensor_type['ds02']:
         sensor_exist.update(dict.fromkeys(['door_sensor'], True))
     return
 
@@ -265,7 +274,7 @@ def modus_switch():
     """Switch alarm modus."""
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Status ' + color(status_data['system_health']) + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
 
@@ -282,7 +291,17 @@ def siren():
         for m in modus:
             switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": True}}]}}
             restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Siren  ' + color(args.siren + 'ed'))
+    log('Siren'.ljust(17) + ' | ' + color((args.siren + 'ED').ljust(8)) + ' | ')
+    return
+
+
+def plug():
+    """Switch Plug on or off."""
+    if not sensor_exist['smart_plug']:
+        log('Plug not found', 3, 1)
+    switch = {"name": args.plug}
+    restpost(URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'] + '/cmd', json.dumps(switch))
+    log('Plug'.ljust(17) + ' | ' + color(args.plug.ljust(8)) + ' | ')
     return
 
 
@@ -341,25 +360,26 @@ def remove_cron():
 def pb_message(pbmsg):
     """Send message using pushbullet module."""
     if args.notify is not None and args.quiet is not True:
+        from pushbullet import PushBullet
         try:
             pb = PushBullet(args.notify)
-        except pushbullet.errors.InvalidKeyError:
-            log('Pushbullet notification not sent due to incorrect token', 2)
-        except pushbullet.errors.PushbulletError:
-            log('Pushbullet notification not sent due to unknown error', 2)
+        except InvalidKeyError:
+            log('Notification'.ljust(17) + ' | ' + color('token'.ljust(8)) + ' | ')
+        except PushbulletError:
+            log('Notification'.ljust(17) + ' | ' + color('error'.ljust(8)) + ' | ')
         else:
             pb.push_note('Gigaset Elements', pbmsg)
-            log('PushBullet notification sent')
+            log('Notification'.ljust(17) + ' | ' + color('pushed'.ljust(8)) + ' | ')
     return
 
 
 def list_events():
     """List past events optionally filtered by date and/or type."""
     if args.filter is None and args.date is None:
-        log('Showing last ' + str(args.events) + ' event(s)')
+        log('Event(s)'.ljust(17) + ' | ' + str(args.events).ljust(8) + ' | ' + 'No filter')
         event_data = restget(URL_EVENTS + '?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
-        log('Showing last ' + str(args.events) + ' ' + str(args.filter).upper() + ' event(s)')
+        log('Event(s)'.ljust(17) + ' | ' + str(args.events).ljust(8) + ' | ' + args.filter.title())
         event_data = restget(URL_EVENTS + '?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
@@ -368,17 +388,17 @@ def list_events():
         except Exception:
             log('Please provide date(s) in DD/MM/YYYY format', 3, 1)
     if args.filter is None and args.date is not None:
-        log('Showing event(s) between ' + args.date[0] + ' and ' + args.date[1])
+        log('Event(s)'.ljust(17) + ' | ' + 'DATE'.ljust(8) + ' | ' + args.date[0] + ' - ' + args.date[1])
         event_data = restget(URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
-        log('Showing ' + str(args.filter).upper() + ' event(s) between ' + args.date[0] + ' and ' + args.date[1])
+        log('Event(s)'.ljust(17) + ' | ' + '*'.ljust(8) + ' | ' + args.filter.title() + ' | ' + args.date[0] + ' - ' + args.date[1])
         event_data = restget(URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
             if 'type' in item['o']:
-                print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type'])
+                log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
         except KeyError:
-            print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['source_type']
+            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['type'].ljust(8) + ' | ' + item['source_type'])
             continue
     return
 
@@ -389,7 +409,7 @@ def monitor():
         url_monitor = URL_EVENTS + '?limit=30'
     else:
         url_monitor = URL_EVENTS + '?limit=30&group=' + args.filter
-    log('Monitor mode | CTRL+C to exit')
+    log('Monitor mode'.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
     ids = set()
     lastevents = restget(url_monitor)
     for item in lastevents['events']:
@@ -401,10 +421,10 @@ def monitor():
                 try:
                     if item['id'] not in ids:
                         if 'type' in item['o']:
-                            print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type'])
+                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
                             ids.add(item['id'])
                 except KeyError:
-                    print('[-] ' + time.strftime('%m/%d/%Y %H:%M:%S', time.localtime(int(item['ts']) / 1000))) + ' ' + item['type'] + ' ' + item['source_type']
+                    log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['type'].ljust(8) + ' | ' + item['source_type'])
                     ids.add(item['id'])
                     continue
             time.sleep(6)
@@ -415,10 +435,10 @@ def monitor():
 
 def sensor():
     """Show sensor details and current state."""
-    print('[-] ') + basestation_data[0]['friendly_name'].ljust(16) + ' | ' + color(basestation_data[0]['status']) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
+    print('[-] ') + basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
     for item in basestation_data[0]['sensors']:
         try:
-            print('[-] ') + item['friendly_name'].ljust(16) + ' | ' + color(item['status']) + ' | firmware ' + color(item['firmware_status']),
+            print('[-] ') + item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']),
             if item['type'] not in ['is01', 'sp01']:
                 print '| battery ' + color(item['battery']['state']),
             if item['type'] in ['ds02', 'ds01']:
@@ -435,7 +455,7 @@ def devices():
     device = restget(URL_DEVICE)
     for item in device:
         try:
-            log(item['friendly_name'].ljust(16) + ' | ' + item['type'] + ' | ' + item['_id'])
+            log(item['friendly_name'].ljust(17) + ' | ' + item['type'].upper().ljust(8) + ' | ' + item['_id'])
         except KeyError:
             continue
     return
@@ -447,9 +467,9 @@ def rules():
     for item in rules:
         try:
             if item['active']:
-                item['active'] = 'On'
+                item['active'] = 'active'
             else:
-                item['active'] = 'Off'
+                item['active'] = 'inactive'
             if item['parameter']['start_time'] == 0 and item['parameter']['end_time'] == 86400:
                 timer = '00:00 - 00:00'.ljust(13)
             else:
@@ -458,7 +478,7 @@ def rules():
                 days = '1, 2, 3, 4, 5, 6, 7'
             else:
                 days = str(item['parameter']['repeater']['at']).replace('[', '').replace(']', '').ljust(19)
-            log(item['friendly_name'].ljust(16) + ' | ' + color(item['active']).ljust(12) + ' | ' + item['parameter']['repeater']['frequency'].ljust(7) + ' | ' + timer + ' | ' + days + ' | ' + item['recipe'].replace('_', ' ') + ' | ' + item['id'])
+            log(item['friendly_name'].ljust(17) + ' | ' + color(item['active'].ljust(8)) + ' | ' + item['parameter']['repeater']['frequency'].ljust(7) + ' | ' + timer + ' | ' + days + ' | ' + item['recipe'].replace('_', ' ') + ' | ' + item['id'])
         except KeyError:
             continue
     return
@@ -469,7 +489,7 @@ def notifications():
     channels = restget(URL_CHANNEL)
     for item in channels.get('gcm', ''):
         try:
-            print('[-] ' + item['friendlyName'].ljust(16) + ' | ' + color(item['status']) + ' |'),
+            print('[-] ' + item['friendlyName'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' |'),
             for item2 in item['notificationGroups']:
                 print item2,
             print
@@ -483,7 +503,7 @@ def camera_info():
     if not sensor_exist['camera']:
         log('Camera not found', 3, 1)
     try:
-        print('[-] ') + camera_data[0]['friendly_name'].ljust(16) + ' | ' + color(camera_data[0]['status']) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+        print('[-] ') + camera_data[0]['friendly_name'].ljust(17) + ' | ' + color(camera_data[0]['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
         print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
         print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
         if camera_data[0]['settings']['connection'] == 'wifi':
@@ -492,7 +512,7 @@ def camera_info():
         print
     stream_data = restget(URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
     for stream in ('m3u8', 'rtmp', 'rtsp'):
-        log('Camera stream    | ' + stream + '   | ' + stream_data['uri'][stream])
+        log('Camera stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
     return
 
 
@@ -503,10 +523,10 @@ def record():
     camera_status = restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
         restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/start')
-        log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('start'))
+        log('Camera recording'.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ')
     if camera_status['description'] == 'Recording already started':
         restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/stop')
-        log('Camera ' + camera_data[0]['id'] + ' | Recording ' + color('stop'))
+        log('Camera recording'.ljust(17) + ' | ' + color('stopped'.ljust(8)) + ' | ')
     return
 
 
@@ -543,12 +563,17 @@ def main():
             if args.sensor is not True:
                 pb_body = 'Status ' + status_data['system_health'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
 
-        if args.siren:
-            siren()
-
         if args.sensor:
             sensor()
+            if status_data['status_msg_id'] == '':
+                status_data['status_msg_id'] = u'\u2713'
             pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
+
+        if args.camera:
+            camera_info()
+
+        if args.record:
+            record()
 
         if args.notifications:
             notifications()
@@ -556,22 +581,22 @@ def main():
         if args.rules:
             rules()
 
-        if args.camera:
-            camera_info()
-
         if args.devices:
             devices()
+
+        if args.siren:
+            siren()
+
+        if args.plug:
+            plug()
+
+        if pb_body is not None:
+            pb_message(pb_body)
 
         if args.events is None and args.date is None:
             pass
         else:
             list_events()
-
-        if args.record:
-            record()
-
-        if pb_body is not None:
-            pb_message(pb_body)
 
         if args.monitor:
             monitor()
