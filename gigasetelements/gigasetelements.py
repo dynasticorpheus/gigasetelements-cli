@@ -53,6 +53,9 @@ colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
+s.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
+s.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
+
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 URL_EVENTS = 'https://api.gigaset-elements.de/api/v2/me/events'
@@ -180,9 +183,9 @@ def restget(url, head=0, seconds=90):
         else:
             r = s.get(url, timeout=seconds, stream=False)
     except requests.exceptions.RequestException as e:
-        log(str(e.message), 3, 1)
+        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
-        log('HTTP error ' + str(r.status_code), 3, 1)
+        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, 1)
     if is_json(r.text):
         data = r.json()
     if data == '':
@@ -195,9 +198,9 @@ def restpost(url, payload):
     try:
         r = s.post(url, data=payload, timeout=90, stream=False)
     except requests.exceptions.RequestException as e:
-        log(str(e.message), 3, 1)
+        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
-        log('HTTP error ' + str(r.status_code), 3, 1)
+        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, 1)
     commit_data = r.json()
     return commit_data
 
@@ -215,9 +218,7 @@ def connect():
     payload = {'password': args.password, 'email': args.username}
     commit_data = restpost(URL_IDENTITY, payload)
     log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
-    s.headers['Connection'] = 'close'
     restget(URL_AUTH)
-    s.headers['Connection'] = 'keep-alive'
     log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
     restget(URL_USAGE, 1, 3)
     basestation_data = restget(URL_BASE)
