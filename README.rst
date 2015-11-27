@@ -40,6 +40,8 @@ Features
  * Show notification settings
  * Show registered mobile devices
  * Siren arming/disarming
+ * Show custom rules (button/plug)
+ * Switch plug on/off
 
 Usage
 -----
@@ -121,11 +123,10 @@ Help
 
 To do
 -----
-* Prepare for API V2
-* Replicate all functionality from app and/or website ... a long list
-* Support for gigaset elements plug
-* Support for gigaset elements button
 * Improve overall code
+* Replicate all functionality from app and/or website ... a long list
+* Support for gigaset elements button
+* Support for domoticz home automation system
 
 
 Notes
