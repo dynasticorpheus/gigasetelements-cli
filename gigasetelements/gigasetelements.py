@@ -248,36 +248,29 @@ def connect():
 def collect_hw():
     """Retrieve sensor list and details."""
     global sensor_id
-    global sensor_type
     global sensor_exist
-    sensor_id = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], None)
-    sensor_type = dict.fromkeys(['bt01', 'yc01', 'ds01', 'ds02', 'is01', 'ps01', 'ps02', 'sp01', 'ws02'], False)
+    sensor_id = {}
     sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug'], False)
     for item in basestation_data[0]['sensors']:
-        if item['type'] in sensor_type:
-            sensor_type.update(dict.fromkeys([item['type']], True))
-    for item in basestation_data[0]['sensors']:
-        if item['type'] in sensor_id:
-            sensor_id.update(dict.fromkeys([item['type']], item['id']))
+        sensor_id.setdefault(item['type'], []).append(item['id'])
     try:
         if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
-            sensor_type.update(dict.fromkeys(['yc01'], True))
             sensor_id.update(dict.fromkeys(['yc01'], camera_data[0]['id']))
     except IndexError:
         pass
-    if sensor_type['is01']:
+    if 'is01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
-    if sensor_type['sp01']:
+    if 'sp01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['smart_plug'], True))
-    if sensor_type['bt01']:
+    if 'bt01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['button'], True))
-    if sensor_type['yc01']:
+    if 'yc01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['camera'], True))
-    if sensor_type['ws02']:
+    if 'ws02' in sensor_id:
         sensor_exist.update(dict.fromkeys(['window_sensor'], True))
-    if sensor_type['ps01'] or sensor_type['ps02']:
+    if 'ps01' in sensor_id or 'ps02' in sensor_id:
         sensor_exist.update(dict.fromkeys(['presence_sensor'], True))
-    if sensor_type['ds01'] or sensor_type['ds02']:
+    if 'ds01' in sensor_id or 'ds02' in sensor_id:
         sensor_exist.update(dict.fromkeys(['door_sensor'], True))
     return
 
@@ -312,7 +305,7 @@ def plug():
     if not sensor_exist['smart_plug']:
         log('Plug not found', 3, 1)
     switch = {"name": args.plug}
-    restpost(URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'] + '/cmd', json.dumps(switch))
+    restpost(URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch))
     log('Plug'.ljust(17) + ' | ' + color(args.plug.ljust(8)) + ' | ')
     return
 
