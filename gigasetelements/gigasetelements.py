@@ -44,6 +44,7 @@ parser.add_argument('-a', '--camera', help='show camera status', action='store_t
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
 parser.add_argument('-t', '--monitor', help='show new events using monitor mode', action='store_true', required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
+parser.add_argument('-j', '--restart', help='automatically restart program in case of a connection error', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
@@ -79,6 +80,13 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+def restart_program():
+    """Restarts the current program."""
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
+    return
+
+
 def log(logme, rbg=0, exitnow=0):
     """Print output in selected color and provide program exit on critical error."""
     if rbg == 0:
@@ -89,6 +97,9 @@ def log(logme, rbg=0, exitnow=0):
         print bcolors.WARN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
     if rbg == 3:
         print bcolors.FAIL + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+    if exitnow == 1 and args.restart:
+        print
+        restart_program()
     if exitnow == 1:
         print
         sys.exit()
@@ -159,9 +170,9 @@ def configure():
         else:
             if config.getboolean('options', 'nowarning'):
                 args.warning = True
-        return
     if None in (args.username, args.password):
         log('Username and/or password missing', 3, 1)
+    return
 
 
 def is_json(myjson):
@@ -173,7 +184,7 @@ def is_json(myjson):
     return True
 
 
-def restget(url, head=0, seconds=90):
+def restget(url, head=0, seconds=90, exit=1):
     """REST interaction using GET or HEAD."""
     data = ''
     try:
@@ -183,9 +194,9 @@ def restget(url, head=0, seconds=90):
         else:
             r = s.get(url, timeout=seconds, stream=False)
     except requests.exceptions.RequestException as e:
-        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, 1)
+        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, exit)
     if r.status_code != requests.codes.ok:
-        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, 1)
+        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, exit)
     if is_json(r.text):
         data = r.json()
     if data == '':
@@ -220,7 +231,7 @@ def connect():
     log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
     restget(URL_AUTH)
     log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
-    restget(URL_USAGE, 1, 3)
+    restget(URL_USAGE, 1, 3, 0)
     basestation_data = restget(URL_BASE)
     log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
     camera_data = restget(URL_CAMERA)
@@ -430,7 +441,7 @@ def monitor():
                     continue
             time.sleep(6)
     except KeyboardInterrupt:
-        pass
+        log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
     return
 
 
@@ -605,4 +616,4 @@ def main():
         print
 
     except KeyboardInterrupt:
-        log('CTRL+C detected program halted', 3)
+        log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
