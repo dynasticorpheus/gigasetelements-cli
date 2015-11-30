@@ -117,7 +117,7 @@ def os_type(ostype):
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
     green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
-    orange = ['orange']
+    orange = ['orange', 'warning']
     if txt.lower().strip() in green:
         txt = bcolors.OKGREEN + txt.upper() + bcolors.ENDC
     elif txt.lower().strip() in orange:
@@ -142,7 +142,7 @@ def configure():
             args.config = None
     else:
         if os.path.exists(args.config) == False:
-            log('File does not exist ' + args.config, 3, 1)
+            log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | File does not exist ' + args.config, 3, 1)
     if args.config is not None:
         log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
         config = ConfigParser.ConfigParser()
@@ -171,7 +171,7 @@ def configure():
             if config.getboolean('options', 'nowarning'):
                 args.warning = True
     if None in (args.username, args.password):
-        log('Username and/or password missing', 3, 1)
+        log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Username and/or password missing', 3, 1)
     return
 
 
@@ -322,7 +322,7 @@ def istimeformat(timestr):
 def add_cron():
     """Add job to crontab to set alarm modus."""
     if args.modus is None:
-        log('Please also specify modus using -m option to schedule cron job', 3, 1)
+        log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Specify modus using -m option', 3, 1)
     if istimeformat(args.cronjob):
         cron = CronTab(user=True)
         now = datetime.datetime.now()
@@ -340,9 +340,9 @@ def add_cron():
         job.hour.on(time.strptime(args.cronjob, '%H:%M')[3])
         job.minute.on(time.strptime(args.cronjob, '%H:%M')[4])
         cron.write()
-        log('Cron job scheduled | Modus will be set to ' + color(args.modus) + ' on ' + timer.strftime('%A %d %B %Y %H:%M'))
+        log('Cronjob'.ljust(17) + ' | ' + color(args.modus.ljust(8)) + ' | ' + 'Modus on ' + timer.strftime('%A %d %B %Y %H:%M'))
     else:
-        log('Please use valid time (00:00 - 23:59)', 3, 1)
+        log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Use valid time (00:00 - 23:59)', 3, 1)
     return
 
 
@@ -352,11 +352,11 @@ def remove_cron():
     existing = cron.find_command('gigasetelements-cli')
     count = 0
     for i in existing:
-        log('Cron job removed | ' + str(i))
+        log('Cronjob'.ljust(17) + ' | ' + color('removed'.ljust(8)) + ' | ' + str(i))
         count = count + 1
     cron.remove_all('gigasetelements-cli')
     if count == 0:
-        log('No cron jobs found for removal | gigasetelements-cli', 3)
+        log('Cronjob'.ljust(17) + ' | ' + color('warning'.ljust(8)) + ' | ' + 'No items found for removal')
     else:
         cron.write()
     return
@@ -391,7 +391,7 @@ def list_events():
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
             to_ts = str(int(time.mktime(time.strptime(args.date[1], '%d/%m/%Y'))) * 1000)
         except Exception:
-            log('Please provide date(s) in DD/MM/YYYY format', 3, 1)
+            log('Event(s)'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | ' + 'Date(s) filter not in DD/MM/YYYY format', 3, 1)
     if args.filter is None and args.date is not None:
         log('Event(s)'.ljust(17) + ' | ' + 'DATE'.ljust(8) + ' | ' + args.date[0] + ' - ' + args.date[1])
         event_data = restget(URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
