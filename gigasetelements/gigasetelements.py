@@ -286,7 +286,7 @@ def modus_switch():
 def siren():
     """Dis(arm) siren."""
     if not sensor_exist['indoor_siren']:
-        log('Siren not found', 3, 1)
+        log('Siren'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     modus = ['home', 'away', 'custom']
     if args.siren == 'disarm':
         for m in modus:
@@ -303,7 +303,7 @@ def siren():
 def plug():
     """Switch Plug on or off."""
     if not sensor_exist['smart_plug']:
-        log('Plug not found', 3, 1)
+        log('Plug'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     switch = {"name": args.plug}
     restpost(URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch))
     log('Plug'.ljust(17) + ' | ' + color(args.plug.ljust(8)) + ' | ')
@@ -506,7 +506,7 @@ def notifications():
 def camera_info():
     """Show camera details and current state."""
     if not sensor_exist['camera']:
-        log('Camera not found', 3, 1)
+        log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     try:
         print('[-] ') + camera_data[0]['friendly_name'].ljust(17) + ' | ' + color(camera_data[0]['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
         print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
@@ -524,7 +524,7 @@ def camera_info():
 def record():
     """Start or stop camera recording based on current state."""
     if not sensor_exist['camera']:
-        log('Camera not found', 3, 1)
+        log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     camera_status = restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
         restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/start')
