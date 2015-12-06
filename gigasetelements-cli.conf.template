@@ -28,3 +28,36 @@ modus: home
 
 # suppress urllib3 warnings {true,false} (optional)
 nowarning: true
+
+[domoticz]
+
+# domoticz server ip address (required)
+ip: 127.0.0.1
+
+# domoticz server port (required)
+port: 8080
+
+# domoticz user name (optional)
+username:
+
+# domoticz password (optional)
+password:
+
+# domoticz idx sensor pairing (required)
+
+# 1. Go to Domoticz GUI
+# 2. Add hardware - dummy
+# 3. Create a virtual sensor - type Alert for basestation (remember the idx number)
+# 4. Create a virtual sensor - type Manual Light/Switch for each motion/door/window/siren/plug/button/camera (remember their idx numbers)
+# 5. Set Off Delay to 2 seconds for virtual sensors linked to motion, button or camera
+# 6. Run "gigasetelements-cli -ss" to get sensor ids and match them with the their respective idx in domoticz
+# 7. Run "gigasetelements-cli -a" to get camera sensor id. Use the 12 uppercase digits in stream url. This MAC address can also be found on the back of the camera.
+
+# example motion/door/window/siren/plug
+# 123FC4577H: 99
+
+# example basestation id
+# F32A76C4DHJ1B743A0E0D74EFD2375D1: 98
+
+# example camera id
+# 7C2G30873SED: 97

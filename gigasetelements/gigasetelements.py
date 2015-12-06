@@ -37,12 +37,12 @@ parser.add_argument('-m', '--modus', help='set modus', required=False, choices=(
 parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
 parser.add_argument('-l', '--rules', help='show custom rules', action='store_true', required=False)
-parser.add_argument('-s', '--sensor', help='show sensor status', action='store_true', required=False)
+parser.add_argument('-s', '--sensor', help='''show sensor status (use -ss to include sensor id's)''', action='count', default=0, required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
-parser.add_argument('-t', '--monitor', help='show new events using monitor mode', action='store_true', required=False)
+parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-j', '--restart', help='automatically restart program in case of a connection error', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
@@ -66,6 +66,11 @@ URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_DEVICE = 'https://api.gigaset-elements.de/api/v1/me/devices'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 URL_USAGE = 'https://goo.gl/S66QUI'
+
+URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
+URL_ALERT = '/json.htm?type=command&param=udevice&idx='
+
+LEVEL = {'green': '1', 'orange': '3', 'red': '4', 'intrusion': '4', 'ok': '1'}
 
 
 class bcolors:
@@ -129,8 +134,11 @@ def color(txt):
 
 def configure():
     """Load variables based on command line arguments and config file."""
+    global dconfig
+    global url_domo
     global credfromfile
     credfromfile = False
+    authstring = ''
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                      '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'),
@@ -144,9 +152,17 @@ def configure():
         if os.path.exists(args.config) == False:
             log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | File does not exist ' + args.config, 3, 1)
     if args.config is not None:
-        log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
         config = ConfigParser.ConfigParser()
         config.read(args.config)
+        if args.monitor > 1:
+            try:
+                dconfig = dict(config.items('domoticz'))
+                if dconfig['username'] != '':
+                    authstring = dconfig['username'] + ':' + dconfig['password'] + '@'
+                url_domo = 'http://' + authstring + dconfig['ip'] + ':' + dconfig['port']
+            except Exception:
+                log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Domoticz setting(s) incorrect and/or missing', 3, 1)
+        log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
         if args.username is None:
             args.username = config.get('accounts', 'username')
             credfromfile = True
@@ -262,7 +278,7 @@ def collect_hw():
         sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
     if 'sp01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['smart_plug'], True))
-    if 'bt01' in sensor_id:
+    if 'bn01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['button'], True))
     if 'yc01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['camera'], True))
@@ -409,12 +425,16 @@ def list_events():
 
 
 def monitor():
-    """List events realtime optionally filtered by date and/or type."""
+    """List events realtime optionally filtered by type."""
     if args.filter is None:
-        url_monitor = URL_EVENTS + '?limit=30'
+        url_monitor = URL_EVENTS + '?limit=25'
     else:
-        url_monitor = URL_EVENTS + '?limit=30&group=' + args.filter
-    log('Monitor mode'.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
+        url_monitor = URL_EVENTS + '?limit=25&group=' + args.filter
+    if args.monitor > 1:
+        mode = 'Domoticz mode'
+    else:
+        mode = 'Monitor mode'
+    log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
     ids = set()
     lastevents = restget(url_monitor)
     for item in lastevents['events']:
@@ -422,19 +442,41 @@ def monitor():
     try:
         while True:
             lastevents = restget(url_monitor)
-            for item in lastevents['events']:
+            homestate = lastevents['home_state']
+            for item in reversed(lastevents['events']):
                 try:
                     if item['id'] not in ids:
+                        ids.add(item['id'])
                         if 'type' in item['o']:
                             log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
-                            ids.add(item['id'])
+                            if args.monitor > 1:
+                                if item['o']['type'] == 'ycam':
+                                    domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', homestate)
+                                else:
+                                    domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation'), homestate)
+                        else:
+                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
+                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'], homestate)
                 except KeyError:
-                    log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['type'].ljust(8) + ' | ' + item['source_type'])
-                    ids.add(item['id'])
                     continue
-            time.sleep(6)
+            time.sleep(1)
     except KeyboardInterrupt:
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
+    return
+
+
+def domoticz(type, id, friendly, homestate):
+    """Push events to domoticz server."""
+    if type in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
+        if type in ['close', 'sirenoff', 'off']:
+            cmd = 'off'
+        else:
+            cmd = 'on'
+        restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[id])
+    else:
+        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' + LEVEL.get(homestate, '3') + '&svalue=' + friendly + ' ' + type)
+    sys.stdout.write("\033[F")
+    sys.stdout.write("\033[K")
     return
 
 
@@ -448,6 +490,8 @@ def sensor():
                 print '| battery ' + color(item['battery']['state']),
             if item['type'] in ['ds02', 'ds01']:
                 print '| position ' + color(item['position_status']),
+            if args.sensor > 1:
+                print '| ' + item['id'].upper(),
             print
         except KeyError:
             print
