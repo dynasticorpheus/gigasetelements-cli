@@ -70,7 +70,9 @@ URL_USAGE = 'https://goo.gl/S66QUI'
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
 
-LEVEL = {'green': '1', 'orange': '3', 'red': '4', 'intrusion': '4', 'ok': '1'}
+LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
+
+AUTH_EXPIRE = 21540
 
 
 class bcolors:
@@ -237,6 +239,7 @@ def connect():
     global basestation_data
     global status_data
     global camera_data
+    global auth_time
     if args.warning:
         try:
             requests.packages.urllib3.disable_warnings()
@@ -245,6 +248,7 @@ def connect():
     payload = {'password': args.password, 'email': args.username}
     commit_data = restpost(URL_IDENTITY, payload)
     log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
+    auth_time = time.time()
     restget(URL_AUTH)
     log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
     restget(URL_USAGE, 1, 3, 0)
@@ -426,12 +430,14 @@ def list_events():
 
 def monitor():
     """List events realtime optionally filtered by type."""
+    global auth_time
     if args.filter is None:
-        url_monitor = URL_EVENTS + '?limit=25'
+        url_monitor = URL_EVENTS + '?limit=10'
     else:
-        url_monitor = URL_EVENTS + '?limit=25&group=' + args.filter
+        url_monitor = URL_EVENTS + '?limit=10&group=' + args.filter
     if args.monitor > 1:
         mode = 'Domoticz mode'
+        domoticz('sync system health', 'basestation', 'basestation', status_data['system_health'])
     else:
         mode = 'Monitor mode'
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
@@ -440,9 +446,8 @@ def monitor():
     for item in lastevents['events']:
         ids.add(item['id'])
     try:
-        while True:
+        while 1:
             lastevents = restget(url_monitor)
-            homestate = lastevents['home_state']
             for item in reversed(lastevents['events']):
                 try:
                     if item['id'] not in ids:
@@ -451,15 +456,19 @@ def monitor():
                             log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
                             if args.monitor > 1:
                                 if item['o']['type'] == 'ycam':
-                                    domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', homestate)
+                                    domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', lastevents['home_state'])
                                 else:
-                                    domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation'), homestate)
+                                    domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation'), lastevents['home_state'])
                         else:
                             log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
-                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'], homestate)
+                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'], lastevents['home_state'])
                 except KeyError:
                     continue
-            time.sleep(1)
+            if time.time() - auth_time >= AUTH_EXPIRE:
+                auth_time = time.time()
+                restget(URL_AUTH)
+            else:
+                time.sleep(1)
     except KeyboardInterrupt:
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
     return
