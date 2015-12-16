@@ -437,7 +437,8 @@ def monitor():
         url_monitor = URL_EVENTS + '?limit=10&group=' + args.filter
     if args.monitor > 1:
         mode = 'Domoticz mode'
-        domoticz('sync system health', 'basestation', 'basestation', status_data['system_health'])
+        print
+        domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(), basestation_data[0]['friendly_name'].lower())
     else:
         mode = 'Monitor mode'
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
@@ -456,12 +457,12 @@ def monitor():
                             log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
                             if args.monitor > 1:
                                 if item['o']['type'] == 'ycam':
-                                    domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', lastevents['home_state'])
+                                    domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam')
                                 else:
-                                    domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation'), lastevents['home_state'])
+                                    domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower())
                         else:
                             log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
-                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'], lastevents['home_state'])
+                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower())
                 except KeyError:
                     continue
             if time.time() - auth_time >= AUTH_EXPIRE:
@@ -474,8 +475,9 @@ def monitor():
     return
 
 
-def domoticz(type, id, friendly, homestate):
+def domoticz(type, id, friendly):
     """Push events to domoticz server."""
+    global status_data
     if type in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
         if type in ['close', 'sirenoff', 'off']:
             cmd = 'off'
@@ -483,7 +485,8 @@ def domoticz(type, id, friendly, homestate):
             cmd = 'on'
         restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[id])
     else:
-        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' + LEVEL.get(homestate, '3') + '&svalue=' + friendly + ' ' + type)
+        status_data = restget(URL_HEALTH)
+        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' + LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + type)
     sys.stdout.write("\033[F")
     sys.stdout.write("\033[K")
     return
