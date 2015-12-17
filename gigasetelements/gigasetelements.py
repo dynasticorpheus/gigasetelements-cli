@@ -473,7 +473,8 @@ def monitor():
             else:
                 time.sleep(1)
     except KeyboardInterrupt:
-        restget(url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
+        if args.monitor > 1:
+            restget(url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
     return
 
