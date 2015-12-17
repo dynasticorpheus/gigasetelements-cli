@@ -69,6 +69,7 @@ URL_USAGE = 'https://goo.gl/S66QUI'
 
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
+URL_LOG = '/json.htm?type=command&param=addlogmessage&message='
 
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
 
@@ -438,6 +439,7 @@ def monitor():
     if args.monitor > 1:
         mode = 'Domoticz mode'
         print
+        restget(url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
         domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(), basestation_data[0]['friendly_name'].lower())
     else:
         mode = 'Monitor mode'
@@ -471,6 +473,7 @@ def monitor():
             else:
                 time.sleep(1)
     except KeyboardInterrupt:
+        restget(url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
     return
 
