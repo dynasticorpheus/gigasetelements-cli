@@ -95,16 +95,19 @@ def restart_program():
     return
 
 
-def log(logme, rbg=0, exitnow=0):
+def log(logme, rbg=0, exitnow=0, newline=1):
     """Print output in selected color and provide program exit on critical error."""
-    if rbg == 0:
-        print '[-] ' + logme.encode('utf-8')
     if rbg == 1:
         print bcolors.OKGREEN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
-    if rbg == 2:
+    elif rbg == 2:
         print bcolors.WARN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
-    if rbg == 3:
+    elif rbg == 3:
         print bcolors.FAIL + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+    else:
+        if newline == 1:
+            print '[-] ' + logme.encode('utf-8')
+        else:
+            print '[-] ' + logme.encode('utf-8'),
     if exitnow == 1 and args.restart:
         print
         restart_program()
@@ -498,10 +501,10 @@ def domoticz(type, id, friendly):
 
 def sensor():
     """Show sensor details and current state."""
-    print('[-] ') + basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status'])
+    log(basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status']))
     for item in basestation_data[0]['sensors']:
         try:
-            print('[-] ') + item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']),
+            log(item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']), 0, 0, 0)
             if item['type'] not in ['is01', 'sp01']:
                 print '| battery ' + color(item['battery']['state']),
             if item['type'] in ['ds02', 'ds01']:
