@@ -197,15 +197,6 @@ def configure():
     return
 
 
-def is_json(myjson):
-    """Validate if object is in json format."""
-    try:
-        json_object = json.loads(myjson)
-    except ValueError:
-        return False
-    return True
-
-
 def restget(url, head=0, seconds=90, exit=1):
     """REST interaction using GET or HEAD."""
     data = ''
@@ -219,9 +210,9 @@ def restget(url, head=0, seconds=90, exit=1):
         log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, exit)
     if r.status_code != requests.codes.ok:
         log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, exit)
-    if is_json(r.text):
+    try:
         data = r.json()
-    if data == '':
+    except ValueError:
         data = r.text
     return data
 
