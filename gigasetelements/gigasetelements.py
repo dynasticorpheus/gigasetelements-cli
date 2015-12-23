@@ -32,7 +32,8 @@ parser.add_argument('-e', '--events', help='show last <number> of events', type=
 parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
 parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
 parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
-parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door', 'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
+parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door',
+                                                                                             'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
@@ -127,7 +128,8 @@ def os_type(ostype):
 
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
-    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable',
+             'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
     orange = ['orange', 'warning']
     if txt.lower().strip() in green:
         txt = bcolors.OKGREEN + txt.upper() + bcolors.ENDC
@@ -256,7 +258,8 @@ def connect():
     else:
         status_data['status_msg_id'] = ' | ' + status_data['status_msg_id']
     if args.modus is None:
-        log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
+        log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) +
+            status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
     return
 
 
@@ -294,7 +297,8 @@ def modus_switch():
     """Switch alarm modus."""
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() + ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() +
+        ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
 
@@ -345,13 +349,15 @@ def add_cron():
         if credfromfile:
             job = cron.new('gigasetelements-cli -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         else:
-            job = cron.new('gigasetelements-cli -u ' + args.username + ' -p ' + args.password + ' -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+            job = cron.new('gigasetelements-cli -u ' + args.username + ' -p ' + args.password + ' -m ' +
+                           args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         job.month.on(datetime.datetime.now().strftime('%-m'))
         if now < timer:
             job.day.on(datetime.datetime.now().strftime('%-d'))
         else:
             job.day.on(str((int(datetime.datetime.now().strftime('%-d')) + 1)))
-            timer = now.replace(day=(int(datetime.datetime.now().strftime('%-d')) + 1), hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
+            timer = now.replace(day=(int(datetime.datetime.now().strftime('%-d')) + 1), hour=time.strptime(args.cronjob, '%H:%M')
+                                [3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
         job.hour.on(time.strptime(args.cronjob, '%H:%M')[3])
         job.minute.on(time.strptime(args.cronjob, '%H:%M')[4])
         cron.write()
@@ -416,7 +422,8 @@ def list_events():
     for item in event_data['events']:
         try:
             if 'type' in item['o']:
-                log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
+                log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']
+                    ['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
         except KeyError:
             log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['type'].ljust(8) + ' | ' + item['source_type'])
             continue
@@ -450,14 +457,16 @@ def monitor():
                     if item['id'] not in ids:
                         ids.add(item['id'])
                         if 'type' in item['o']:
-                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o']['type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
+                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
+                                'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
                             if args.monitor > 1:
                                 if item['o']['type'] == 'ycam':
                                     domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam')
                                 else:
                                     domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower())
                         else:
-                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
+                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
+                                ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
                             domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower())
                 except KeyError:
                     continue
@@ -484,7 +493,8 @@ def domoticz(type, id, friendly):
         restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[id])
     else:
         status_data = restget(URL_HEALTH)
-        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' + LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + type)
+        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
+                LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + type)
     sys.stdout.write("\033[F")
     sys.stdout.write("\033[K")
     return
@@ -492,7 +502,8 @@ def domoticz(type, id, friendly):
 
 def sensor():
     """Show sensor details and current state."""
-    log(basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status']))
+    log(basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]
+                                                                       ['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status']))
     for item in basestation_data[0]['sensors']:
         try:
             log(item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']), 0, 0, 0)
@@ -532,12 +543,14 @@ def rules():
             if item['parameter']['start_time'] == 0 and item['parameter']['end_time'] == 86400:
                 timer = '00:00 - 00:00'.ljust(13)
             else:
-                timer = str(datetime.timedelta(seconds=int(item['parameter']['start_time']))).rjust(8, '0')[0:5] + ' - ' + str(datetime.timedelta(seconds=int(item['parameter']['end_time']))).rjust(8, '0')[0:5]
+                timer = str(datetime.timedelta(seconds=int(item['parameter']['start_time']))).rjust(8, '0')[
+                    0:5] + ' - ' + str(datetime.timedelta(seconds=int(item['parameter']['end_time']))).rjust(8, '0')[0:5]
             if item['parameter']['repeater']['frequency'] == 'daily':
                 days = '1, 2, 3, 4, 5, 6, 7'
             else:
                 days = str(item['parameter']['repeater']['at']).replace('[', '').replace(']', '').ljust(19)
-            log(item['friendly_name'].ljust(17) + ' | ' + color(item['active'].ljust(8)) + ' | ' + item['parameter']['repeater']['frequency'].ljust(7) + ' | ' + timer + ' | ' + days + ' | ' + item['recipe'].replace('_', ' ') + ' | ' + item['id'])
+            log(item['friendly_name'].ljust(17) + ' | ' + color(item['active'].ljust(8)) + ' | ' + item['parameter']['repeater']
+                ['frequency'].ljust(7) + ' | ' + timer + ' | ' + days + ' | ' + item['recipe'].replace('_', ' ') + ' | ' + item['id'])
         except KeyError:
             continue
     return
@@ -562,8 +575,10 @@ def camera_info():
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     try:
-        print('[-] ') + camera_data[0]['friendly_name'].ljust(17) + ' | ' + color(camera_data[0]['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
-        print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' + color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
+        print('[-] ') + camera_data[0]['friendly_name'].ljust(17) + ' | ' + color(camera_data[0]
+                                                                                  ['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+        print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' +
+              color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
         print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
         if camera_data[0]['settings']['connection'] == 'wifi':
             print('| ssid ') + bcolors.OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + bcolors.ENDC
@@ -620,13 +635,15 @@ def main():
         if args.modus is not None and args.cronjob is None:
             modus_switch()
             if args.sensor is not True:
-                pb_body = 'Status ' + status_data['system_health'].upper() + ' | Modus set from ' + basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
+                pb_body = 'Status ' + status_data['system_health'].upper() + ' | Modus set from ' + \
+                    basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
 
         if args.sensor:
             sensor()
             if status_data['status_msg_id'] == '':
                 status_data['status_msg_id'] = u'\u2713'
-            pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
+            pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
+                ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
 
         if args.camera:
             camera_info()
