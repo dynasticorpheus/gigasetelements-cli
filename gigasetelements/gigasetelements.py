@@ -492,7 +492,7 @@ def domoticz(event, sid, friendly):
         restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[sid])
     else:
         status_data = restget(URL_HEALTH)
-        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['sid'].lower()] + '&nvalue=' +
+        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
                 LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
     sys.stdout.write("\033[F")
     sys.stdout.write("\033[K")
