@@ -618,12 +618,12 @@ def main():
         if os_type('posix'):
             if args.cronjob is not None:
                 add_cron()
-                if args.sensor is False and args.events is None:
+                if args.sensor == 0 and args.events is None:
                     print
                     sys.exit()
             if args.remove and args.cronjob is None:
                 remove_cron()
-                if args.sensor is False and args.events is None:
+                if args.sensor == 0 and args.events is None:
                     print
                     sys.exit()
 
