@@ -157,7 +157,7 @@ def configure():
         if args.ignore:
             args.config = None
     else:
-        if os.path.exists(args.config) == False:
+        if not os.path.exists(args.config):
             log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | File does not exist ' + args.config, 3, 1)
     if args.config is not None:
         config = ConfigParser.ConfigParser()
@@ -199,9 +199,8 @@ def configure():
     return
 
 
-def restget(url, head=0, seconds=90, exit=1):
+def restget(url, head=0, seconds=90, end=1):
     """REST interaction using GET or HEAD."""
-    data = ''
     try:
         if head == 1:
             header = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
@@ -209,9 +208,9 @@ def restget(url, head=0, seconds=90, exit=1):
         else:
             r = s.get(url, timeout=seconds, stream=False)
     except requests.exceptions.RequestException as e:
-        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, exit)
+        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, end)
     if r.status_code != requests.codes.ok:
-        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, exit)
+        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, end)
     try:
         data = r.json()
     except ValueError:
@@ -374,7 +373,7 @@ def remove_cron():
     count = 0
     for i in existing:
         log('Cronjob'.ljust(17) + ' | ' + color('removed'.ljust(8)) + ' | ' + str(i))
-        count = count + 1
+        count += 1
     cron.remove_all('gigasetelements-cli')
     if count == 0:
         log('Cronjob'.ljust(17) + ' | ' + color('warning'.ljust(8)) + ' | ' + 'No items found for removal')
@@ -482,19 +481,19 @@ def monitor():
     return
 
 
-def domoticz(type, id, friendly):
+def domoticz(event, sid, friendly):
     """Push events to domoticz server."""
     global status_data
-    if type in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
-        if type in ['close', 'sirenoff', 'off']:
+    if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
+        if event in ['close', 'sirenoff', 'off']:
             cmd = 'off'
         else:
             cmd = 'on'
-        restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[id])
+        restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[sid])
     else:
         status_data = restget(URL_HEALTH)
-        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
-                LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + type)
+        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['sid'].lower()] + '&nvalue=' +
+                LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
     sys.stdout.write("\033[F")
     sys.stdout.write("\033[K")
     return
@@ -575,13 +574,13 @@ def camera_info():
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     try:
-        print('[-] ') + camera_data[0]['friendly_name'].ljust(17) + ' | ' + color(camera_data[0]
-                                                                                  ['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+        print '[-] ' + camera_data[0]['friendly_name'].ljust(17) + ' | ' + color(camera_data[0]
+                                                                                 ['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
         print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' +
               color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
         print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
         if camera_data[0]['settings']['connection'] == 'wifi':
-            print('| ssid ') + bcolors.OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + bcolors.ENDC
+            print '| ssid ' + bcolors.OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + bcolors.ENDC
     except KeyError:
         print
     stream_data = restget(URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
