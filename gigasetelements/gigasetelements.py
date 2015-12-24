@@ -16,8 +16,6 @@ import ConfigParser
 
 import requests
 import colorama
-from crontab import CronTab
-from pushbullet import PushBullet, InvalidKeyError, PushbulletError
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
@@ -339,6 +337,7 @@ def istimeformat(timestr):
 
 def add_cron():
     """Add job to crontab to set alarm modus."""
+    from crontab import CronTab
     if args.modus is None:
         log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Specify modus using -m option', 3, 1)
     if istimeformat(args.cronjob):
@@ -368,6 +367,7 @@ def add_cron():
 
 def remove_cron():
     """Remove all jobs from crontab setting alarm modus."""
+    from crontab import CronTab
     cron = CronTab(user=True)
     existing = cron.find_command('gigasetelements-cli')
     count = 0
@@ -385,7 +385,7 @@ def remove_cron():
 def pb_message(pbmsg):
     """Send message using pushbullet module."""
     if args.notify is not None and args.quiet is not True:
-        from pushbullet import PushBullet
+        from pushbullet import PushBullet, InvalidKeyError, PushbulletError
         try:
             pb = PushBullet(args.notify)
         except InvalidKeyError:
