@@ -15,7 +15,10 @@ import json
 import ConfigParser
 
 import requests
-import colorama
+
+if os.name == 'nt':
+    import colorama
+    colorama.init()
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
@@ -49,7 +52,6 @@ parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action=
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
 gc.disable()
-colorama.init()
 args = parser.parse_args()
 s = requests.Session()
 
