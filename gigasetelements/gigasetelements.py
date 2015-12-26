@@ -14,12 +14,6 @@ import argparse
 import json
 import ConfigParser
 
-import requests
-
-if os.name == 'nt':
-    import colorama
-    colorama.init()
-
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.3.7'
@@ -53,10 +47,19 @@ parser.add_argument('-v', '--version', help='show version', action='version', ve
 
 gc.disable()
 args = parser.parse_args()
-s = requests.Session()
 
-s.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
-s.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
+if os.name == 'nt':
+    import colorama
+    colorama.init()
+    args.cronjob = None
+    args.remove = False
+
+if args.cronjob is None and args.remove is False:
+    import requests
+    s = requests.Session()
+    s.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
+    s.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
+
 
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
@@ -116,14 +119,6 @@ def log(logme, rbg=0, exitnow=0, newline=1):
         print
         sys.exit()
     return
-
-
-def os_type(ostype):
-    """Validate under which OS the program is running."""
-    if os.name == ostype:
-        return True
-    else:
-        return False
 
 
 def color(txt):
@@ -617,17 +612,15 @@ def main():
 
         configure()
 
-        if os_type('posix'):
-            if args.cronjob is not None:
-                add_cron()
-                if args.sensor == 0 and args.events is None:
-                    print
-                    sys.exit()
-            if args.remove and args.cronjob is None:
-                remove_cron()
-                if args.sensor == 0 and args.events is None:
-                    print
-                    sys.exit()
+        if args.cronjob is not None:
+            add_cron()
+            print
+            sys.exit()
+
+        if args.remove and args.cronjob is None:
+            remove_cron()
+            print
+            sys.exit()
 
         connect()
 
