@@ -441,29 +441,25 @@ def monitor():
     else:
         mode = 'Monitor mode'
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
-    ids = set()
-    lastevents = restget(url_monitor)
-    for item in lastevents['events']:
-        ids.add(item['id'])
+    from_ts = str(int(time.time())*1000)
     try:
         while 1:
-            lastevents = restget(url_monitor)
+            lastevents = restget(url_monitor + '&from_ts=' + from_ts)
             for item in reversed(lastevents['events']):
                 try:
-                    if item['id'] not in ids:
-                        ids.add(item['id'])
-                        if 'type' in item['o']:
-                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
-                                'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
-                            if args.monitor > 1:
-                                if item['o']['type'] == 'ycam':
-                                    domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam')
-                                else:
-                                    domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower())
-                        else:
-                            log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
-                                ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
-                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower())
+                    if 'type' in item['o']:
+                        log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
+                            'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
+                        if args.monitor > 1:
+                            if item['o']['type'] == 'ycam':
+                                domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam')
+                            else:
+                                domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower())
+                    else:
+                        log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
+                            ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
+                        domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower())
+                    from_ts = str(int(item['ts']) + 1)
                 except KeyError:
                     continue
             if time.time() - auth_time >= AUTH_EXPIRE:
