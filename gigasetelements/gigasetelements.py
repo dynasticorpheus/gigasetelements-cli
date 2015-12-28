@@ -49,6 +49,7 @@ gc.disable()
 args = parser.parse_args()
 
 if os.name == 'nt':
+    import unidecode
     import colorama
     colorama.init()
     args.cronjob = None
@@ -101,6 +102,8 @@ def restart_program():
 
 def log(logme, rbg=0, exitnow=0, newline=1):
     """Print output in selected color and provide program exit on critical error."""
+    if os.name == 'nt':
+        logme = unidecode.unidecode(unicode(logme))
     if rbg == 1:
         print bcolors.OKGREEN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
     elif rbg == 2:
