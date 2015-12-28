@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 from codecs import open
-from os import path
+from os import path, name
 
 
 here = path.abspath(path.dirname(__file__))
@@ -9,6 +9,13 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+packagelist = ['requests', 'pushbullet.py']
+
+if name == 'nt':
+    packagelist.append('colorama')
+    packagelist.append('unidecode')
+else:
+    packagelist.append('python-crontab')
 
 setup(
     name='gigasetelements-cli',
@@ -16,7 +23,7 @@ setup(
     description='gigasetelements-cli allows you to control your \
     Gigaset Elements home security system from the command line.',
     long_description=long_description,
-    url='https://github.com/dynasticorpheus/gigaset-elements',
+    url='https://github.com/dynasticorpheus/gigasetelements-cli',
     author='dynasticorpheus',
     author_email='dynasticorpheus@gmail.com',
     license='GPL2',
@@ -32,8 +39,7 @@ setup(
 
     keywords='Home Automation, Home Security, Internet of Things (IoT)',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    install_requires=['requests', 'colorama', 'python-crontab',
-                      'pushbullet.py'],
+    install_requires=packagelist,
 
     entry_points={
         'console_scripts': [
