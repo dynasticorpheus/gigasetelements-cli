@@ -2,3 +2,4 @@ requests>=2.9.0
 colorama>=0.3.3
 python-crontab>=1.9.3
 pushbullet.py>=0.9.0
+unidecode>=0.4.18
