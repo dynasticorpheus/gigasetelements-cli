@@ -216,15 +216,21 @@ def restget(url, head=0, seconds=90, end=1):
     return data
 
 
-def restpost(url, payload):
+def restpost(url, payload, head=None):
     """REST interaction using POST."""
     try:
-        r = s.post(url, data=payload, timeout=90, stream=False)
+        if head is not None:
+            r = s.post(url, data=payload, timeout=90, stream=False, headers=head)
+        else:
+            r = s.post(url, data=payload, timeout=90, stream=False)
     except requests.exceptions.RequestException as e:
         log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
         log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, 1)
-    commit_data = r.json()
+    try:
+        commit_data = r.json()
+    except ValueError:
+        commit_data = r.text
     return commit_data
 
 
@@ -321,7 +327,8 @@ def plug():
     if not sensor_exist['smart_plug']:
         log('Plug'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     switch = {"name": args.plug}
-    restpost(URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch))
+    header = {'content-type': 'application/json; charset=UTF-8'}
+    restpost(URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch), header)
     log('Plug'.ljust(17) + ' | ' + color(args.plug.ljust(8)) + ' | ')
     return
 
