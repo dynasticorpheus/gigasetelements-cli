@@ -19,7 +19,7 @@ else:
 
 setup(
     name='gigasetelements-cli',
-    version='1.3.7',
+    version='1.3.8',
     description='gigasetelements-cli allows you to control your \
     Gigaset Elements home security system from the command line.',
     long_description=long_description,
