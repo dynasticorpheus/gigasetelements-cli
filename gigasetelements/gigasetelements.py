@@ -16,7 +16,7 @@ import ConfigParser
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.3.8'
+_VERSION_ = '1.3.9'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
