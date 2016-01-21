@@ -30,6 +30,7 @@ parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this 
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door',
                                                                                              'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
+parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
 parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
 parser.add_argument('-l', '--rules', help='show custom rules', action='store_true', required=False)
@@ -126,7 +127,7 @@ def log(logme, rbg=0, exitnow=0, newline=1):
 
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
-    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable',
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal',
              'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
     orange = ['orange', 'warning']
     if txt.lower().strip() in green:
@@ -302,6 +303,22 @@ def modus_switch():
     restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() +
         ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    return
+
+
+def set_delay():
+    """Set alarm trigger delay."""
+    linfo = ''
+    delay = str(args.delay * 1000)
+    if args.delay > 0:
+        sinfo = 'delayed'
+        linfo = str(args.delay) + ' seconds'
+    else:
+        sinfo = 'normal'
+        linfo = 'No delay'
+    switch = {"intrusion_settings": {"modes": [{"away": {"trigger_delay": delay}}]}}
+    restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+    log('Alarm timer'.ljust(17) + ' | ' + color((sinfo).ljust(8)) + ' | ' + linfo)
     return
 
 
@@ -644,6 +661,9 @@ def main():
                 status_data['status_msg_id'] = u'\u2713'
             pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
                 ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
+
+        if args.delay is not None:
+            set_delay()
 
         if args.camera:
             camera_info()
