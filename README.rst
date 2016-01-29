@@ -145,6 +145,7 @@ A lot of time & effort goes into making gigasetelements-cli so if you like it yo
 **Cheers / Proost / Sante / Servus / Salud / Na zdrowie / Salute**
 
 * *Orkun S*
+* *Adrian R*
 
 License
 -------
