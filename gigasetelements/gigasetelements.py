@@ -63,7 +63,7 @@ if os.name == 'nt':
     args.cronjob = None
     args.remove = False
 
-if args.daemon:
+if args.daemon and os.name != 'nt':
     from daemonize import Daemonize
     try:
         target = open(args.pid, 'w')
