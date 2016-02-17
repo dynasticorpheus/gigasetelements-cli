@@ -13,6 +13,7 @@ import datetime
 import argparse
 import json
 import ConfigParser
+import unidecode
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
@@ -32,8 +33,11 @@ parser.add_argument('-f', '--filter', help='filter events on type', required=Fal
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
 parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
+parser.add_argument('-D', '--daemon', help='daemonize during monitor/domoticz mode', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
-parser.add_argument('-l', '--rules', help='show custom rules', action='store_true', required=False)
+parser.add_argument('-l', '--log', help='fully qualified name of log file', required=False)
+parser.add_argument('-R', '--rules', help='show custom rules', action='store_true', required=False)
+parser.add_argument('-P', '--pid', help='fully qualified name of pid file', default='/tmp/gigasetelements-cli.pid', required=False)
 parser.add_argument('-s', '--sensor', help='''show sensor status (use -ss to include sensor id's)''', action='count', default=0, required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
@@ -49,12 +53,40 @@ parser.add_argument('-v', '--version', help='show version', action='version', ve
 gc.disable()
 args = parser.parse_args()
 
+print
+print 'Gigaset Elements - Command-line Interface'
+print
+
 if os.name == 'nt':
-    import unidecode
     import colorama
     colorama.init()
     args.cronjob = None
     args.remove = False
+
+if args.daemon:
+    from daemonize import Daemonize
+    try:
+        target = open(args.pid, 'w')
+        target.close()
+    except IOError:
+        print('\033[91m' + '[-] Unable to write pid file ' + args.pid + '\033[0m')
+        print
+        sys.exit()
+
+if args.log is not None:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    try:
+        fh = logging.FileHandler(args.log, 'w')
+    except IOError:
+        print('\033[91m' + '[-] Unable to write log file ' + args.log + '\033[0m')
+        print
+        sys.exit()
+    fh.setLevel(logging.INFO)
+    logger.addHandler(fh)
+    logger.info('[' + time.strftime("%c") + '] Gigaset Elements - Command-line Interface')
 
 if args.cronjob is None and args.remove is False:
     import requests
@@ -105,6 +137,8 @@ def log(logme, rbg=0, exitnow=0, newline=1):
     """Print output in selected color and provide program exit on critical error."""
     if os.name == 'nt':
         logme = unidecode.unidecode(unicode(logme))
+    if args.log is not None:
+        logger.info('[' + time.strftime("%c") + '] ' + unidecode.unidecode(unicode(logme)))
     if rbg == 1:
         print bcolors.OKGREEN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
     elif rbg == 2:
@@ -127,15 +161,18 @@ def log(logme, rbg=0, exitnow=0, newline=1):
 
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
-    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal',
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon',
              'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
     orange = ['orange', 'warning']
-    if txt.lower().strip() in green:
-        txt = bcolors.OKGREEN + txt.upper() + bcolors.ENDC
-    elif txt.lower().strip() in orange:
-        txt = bcolors.WARN + txt.upper() + bcolors.ENDC
+    if args.log is not None:
+        txt = txt.upper()
     else:
-        txt = bcolors.FAIL + txt.upper() + bcolors.ENDC
+        if txt.lower().strip() in green:
+            txt = bcolors.OKGREEN + txt.upper() + bcolors.ENDC
+        elif txt.lower().strip() in orange:
+            txt = bcolors.WARN + txt.upper() + bcolors.ENDC
+        else:
+            txt = bcolors.FAIL + txt.upper() + bcolors.ENDC
     return txt
 
 
@@ -629,10 +666,6 @@ def main():
     pb_body = None
 
     try:
-        print
-        print 'Gigaset Elements - Command-line Interface'
-        print
-
         configure()
 
         if args.cronjob is not None:
@@ -695,7 +728,13 @@ def main():
             list_events()
 
         if args.monitor:
-            monitor()
+            if args.daemon and os.name != 'nt':
+                log('Run as background'.ljust(17) + ' | ' + color('daemon'.ljust(8)) + ' | ' + args.pid)
+                print
+                daemon = Daemonize(app="gigasetelements-cli", pid=args.pid, action=monitor, auto_close_fds=False)
+                daemon.start()
+            else:
+                monitor()
 
         print
 

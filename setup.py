@@ -9,11 +9,10 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-packagelist = ['requests', 'pushbullet.py']
+packagelist = ['requests', 'pushbullet.py', 'unidecode']
 
 if name == 'nt':
     packagelist.append('colorama')
-    packagelist.append('unidecode')
 else:
     packagelist.append('python-crontab')
 
