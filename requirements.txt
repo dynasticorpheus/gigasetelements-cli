@@ -3,3 +3,4 @@ colorama>=0.3.5
 python-crontab>=2.0.1
 pushbullet.py>=0.9.0
 unidecode>=0.4.18
+daemonize>=2.4.2

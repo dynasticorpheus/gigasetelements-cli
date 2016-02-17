@@ -15,6 +15,7 @@ if name == 'nt':
     packagelist.append('colorama')
 else:
     packagelist.append('python-crontab')
+    packagelist.append('daemonize')
 
 setup(
     name='gigasetelements-cli',
