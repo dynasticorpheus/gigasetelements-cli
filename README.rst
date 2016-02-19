@@ -36,12 +36,14 @@ Features
  * Receive pushbullet messages on status and/or modus change
  * Show camera info and expose video urls for external usage (e.g. VLC)
  * Switch camera recording on/off
- * Monitor mode showing live event stream
+ * Monitor mode outputting live event stream to screen and/or log file
  * Show notification settings
  * Show registered mobile devices
  * Siren arming/disarming
  * Show custom rules (button/plug)
  * Switch plug on/off
+ * Set alarm trigger delay
+ * Domoticz home automation system support
 
 Usage
 -----
