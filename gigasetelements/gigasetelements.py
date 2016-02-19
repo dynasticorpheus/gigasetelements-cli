@@ -32,7 +32,6 @@ parser.add_argument('-f', '--filter', help='filter events on type', required=Fal
                                                                                              'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
-parser.add_argument('-y', '--devices', help='show registered mobile devices', action='store_true', required=False)
 parser.add_argument('-D', '--daemon', help='daemonize during monitor/domoticz mode', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
 parser.add_argument('-l', '--log', help='fully qualified name of log file', required=False)
@@ -101,7 +100,6 @@ URL_EVENTS = 'https://api.gigaset-elements.de/api/v2/me/events'
 URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
-URL_DEVICE = 'https://api.gigaset-elements.de/api/v1/me/devices'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 URL_USAGE = 'https://goo.gl/xgYNJD'
 
@@ -576,17 +574,6 @@ def sensor():
     return
 
 
-def devices():
-    """List registered mobile device(s)."""
-    device = restget(URL_DEVICE)
-    for item in device:
-        try:
-            log(item['friendly_name'].ljust(17) + ' | ' + item['type'].upper().ljust(8) + ' | ' + item['_id'])
-        except KeyError:
-            continue
-    return
-
-
 def rules():
     """List custom rule(s)."""
     rules = restget(URL_BASE + '/' + basestation_data[0]['id'] + '/rules?rules=custom')
@@ -709,9 +696,6 @@ def main():
 
         if args.rules:
             rules()
-
-        if args.devices:
-            devices()
 
         if args.siren:
             siren()
