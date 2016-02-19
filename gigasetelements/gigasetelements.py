@@ -79,7 +79,7 @@ if args.log is not None:
     logger.setLevel(logging.INFO)
     logger.propagate = False
     try:
-        fh = logging.FileHandler(args.log, 'w')
+        fh = logging.FileHandler(args.log, 'a')
     except IOError:
         print('\033[91m' + '[-] Unable to write log file ' + args.log + '\033[0m')
         print
