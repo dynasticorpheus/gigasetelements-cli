@@ -28,8 +28,8 @@ parser.add_argument('-e', '--events', help='show last <number> of events', type=
 parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
 parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
 parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
-parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=('door',
-                                                                                             'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
+parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=(
+    'door', 'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
 parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
 parser.add_argument('-D', '--daemon', help='daemonize during monitor/domoticz mode', action='store_true', required=False)
@@ -179,8 +179,14 @@ def configure():
     global dconfig
     global url_domo
     global credfromfile
+    global pem
     credfromfile = False
     authstring = ''
+    try:
+        import certifi
+        pem = certifi.old_where()
+    except Exception:
+        pem = True
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                      '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'),
@@ -238,9 +244,9 @@ def restget(url, head=0, seconds=90, end=1):
     try:
         if head == 1:
             header = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
-            r = s.head(url, timeout=seconds, headers=header, allow_redirects=True)
+            r = s.head(url, timeout=seconds, headers=header, allow_redirects=True, verify=pem)
         else:
-            r = s.get(url, timeout=seconds, stream=False)
+            r = s.get(url, timeout=seconds, stream=False, verify=pem)
     except requests.exceptions.RequestException as e:
         log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, end)
     if r.status_code != requests.codes.ok:
@@ -256,9 +262,9 @@ def restpost(url, payload, head=None):
     """REST interaction using POST."""
     try:
         if head is not None:
-            r = s.post(url, data=payload, timeout=90, stream=False, headers=head)
+            r = s.post(url, data=payload, timeout=90, stream=False, headers=head, verify=pem)
         else:
-            r = s.post(url, data=payload, timeout=90, stream=False)
+            r = s.post(url, data=payload, timeout=90, stream=False, verify=pem)
     except requests.exceptions.RequestException as e:
         log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, 1)
     if r.status_code != requests.codes.ok:
@@ -618,8 +624,8 @@ def camera_info():
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     try:
-        print '[-] ' + camera_data[0]['friendly_name'].ljust(17) + ' | ' + color(camera_data[0]
-                                                                                 ['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
+        print '[-] ' + camera_data[0]['friendly_name'].ljust(
+            17) + ' | ' + color(camera_data[0]['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
         print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' +
               color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
         print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
