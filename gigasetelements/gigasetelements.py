@@ -17,7 +17,7 @@ import unidecode
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.3.9'
+_VERSION_ = '1.4.0'
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -102,7 +102,7 @@ URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
-URL_USAGE = 'https://goo.gl/xgYNJD'
+URL_USAGE = 'https://goo.gl/wjLswA'
 
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
