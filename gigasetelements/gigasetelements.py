@@ -46,6 +46,7 @@ parser.add_argument('-t', '--monitor', help='show events using monitor mode (use
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-j', '--restart', help='automatically restart program in case of a connection error', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
+parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verification', action='store_true', required=False)
 parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
@@ -182,11 +183,14 @@ def configure():
     global pem
     credfromfile = False
     authstring = ''
-    try:
-        import certifi
-        pem = certifi.old_where()
-    except Exception:
-        pem = True
+    if args.insecure:
+        pem = False
+    else:
+        try:
+            import certifi
+            pem = certifi.old_where()
+        except Exception:
+            pem = True
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                      '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'),
