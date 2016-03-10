@@ -93,6 +93,9 @@ if args.cronjob is None and args.remove is False:
     s = requests.Session()
     s.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
     s.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
+    POST = s.post
+    GET = s.get
+    HEAD = s.head
 
 
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
@@ -111,6 +114,9 @@ URL_LOG = '/json.htm?type=command&param=addlogmessage&message='
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
 
 AUTH_EXPIRE = 21540
+
+AGENT = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
+CONTENT = {'content-type': 'application/json; charset=UTF-8'}
 
 
 class bcolors:
@@ -243,14 +249,13 @@ def configure():
     return
 
 
-def restget(url, head=0, seconds=90, end=1):
-    """REST interaction using GET or HEAD."""
+def rest(method, url, payload=None, header=AGENT, timeout=90, end=1):
+    """REST interaction using requests module."""
     try:
-        if head == 1:
-            header = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
-            r = s.head(url, timeout=seconds, headers=header, allow_redirects=True, verify=pem)
+        if method == POST:
+            r = method(url, timeout=timeout, data=payload, headers=header, allow_redirects=True, verify=pem)
         else:
-            r = s.get(url, timeout=seconds, stream=False, verify=pem)
+            r = method(url, timeout=timeout, headers=header, allow_redirects=True, verify=pem)
     except requests.exceptions.RequestException as e:
         log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, end)
     if r.status_code != requests.codes.ok:
@@ -260,24 +265,6 @@ def restget(url, head=0, seconds=90, end=1):
     except ValueError:
         data = r.text
     return data
-
-
-def restpost(url, payload, head=None):
-    """REST interaction using POST."""
-    try:
-        if head is not None:
-            r = s.post(url, data=payload, timeout=90, stream=False, headers=head, verify=pem)
-        else:
-            r = s.post(url, data=payload, timeout=90, stream=False, verify=pem)
-    except requests.exceptions.RequestException as e:
-        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, 1)
-    if r.status_code != requests.codes.ok:
-        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, 1)
-    try:
-        commit_data = r.json()
-    except ValueError:
-        commit_data = r.text
-    return commit_data
 
 
 def connect():
@@ -292,16 +279,16 @@ def connect():
         except Exception:
             pass
     payload = {'password': args.password, 'email': args.username}
-    commit_data = restpost(URL_IDENTITY, payload)
+    commit_data = rest(POST, URL_IDENTITY, payload)
     log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
     auth_time = time.time()
-    restget(URL_AUTH)
+    rest(GET, URL_AUTH)
     log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
-    restget(URL_USAGE, 1, 3, 0)
-    basestation_data = restget(URL_BASE)
+    rest(HEAD, URL_USAGE, None, AGENT, 3, 0)
+    basestation_data = rest(GET, URL_BASE)
     log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
-    camera_data = restget(URL_CAMERA)
-    status_data = restget(URL_HEALTH)
+    camera_data = rest(GET, URL_CAMERA)
+    status_data = rest(GET, URL_HEALTH)
     if status_data['system_health'] == 'green':
         status_data['status_msg_id'] = ''
     else:
@@ -345,7 +332,7 @@ def collect_hw():
 def modus_switch():
     """Switch alarm modus."""
     switch = {'intrusion_settings': {'active_mode': args.modus}}
-    restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+    rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() +
         ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
@@ -362,7 +349,7 @@ def set_delay():
         sinfo = 'normal'
         linfo = 'No delay'
     switch = {"intrusion_settings": {"modes": [{"away": {"trigger_delay": delay}}]}}
-    restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+    rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Alarm timer'.ljust(17) + ' | ' + color((sinfo).ljust(8)) + ' | ' + linfo)
     return
 
@@ -375,11 +362,11 @@ def siren():
     if args.siren == 'disarm':
         for m in modus:
             switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": False}}]}}
-            restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+            rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     else:
         for m in modus:
             switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": True}}]}}
-            restpost(URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+            rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Siren'.ljust(17) + ' | ' + color((args.siren + 'ED').ljust(8)) + ' | ')
     return
 
@@ -389,8 +376,7 @@ def plug():
     if not sensor_exist['smart_plug']:
         log('Plug'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     switch = {"name": args.plug}
-    header = {'content-type': 'application/json; charset=UTF-8'}
-    restpost(URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch), header)
+    rest(POST, URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch), CONTENT)
     log('Plug'.ljust(17) + ' | ' + color(args.plug.ljust(8)) + ' | ')
     return
 
@@ -471,10 +457,10 @@ def list_events():
     """List past events optionally filtered by date and/or type."""
     if args.filter is None and args.date is None:
         log('Event(s)'.ljust(17) + ' | ' + str(args.events).ljust(8) + ' | ' + 'No filter')
-        event_data = restget(URL_EVENTS + '?limit=' + str(args.events))
+        event_data = rest(GET, URL_EVENTS + '?limit=' + str(args.events))
     if args.filter is not None and args.date is None:
         log('Event(s)'.ljust(17) + ' | ' + str(args.events).ljust(8) + ' | ' + args.filter.title())
-        event_data = restget(URL_EVENTS + '?limit=' + str(args.events) + '&group=' + str(args.filter))
+        event_data = rest(GET, URL_EVENTS + '?limit=' + str(args.events) + '&group=' + str(args.filter))
     if args.date is not None:
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
@@ -483,10 +469,10 @@ def list_events():
             log('Event(s)'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | ' + 'Date(s) filter not in DD/MM/YYYY format', 3, 1)
     if args.filter is None and args.date is not None:
         log('Event(s)'.ljust(17) + ' | ' + 'DATE'.ljust(8) + ' | ' + args.date[0] + ' - ' + args.date[1])
-        event_data = restget(URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
+        event_data = rest(GET, URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&limit=999')
     if args.filter is not None and args.date is not None:
         log('Event(s)'.ljust(17) + ' | ' + '*'.ljust(8) + ' | ' + args.filter.title() + ' | ' + args.date[0] + ' - ' + args.date[1])
-        event_data = restget(URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
+        event_data = rest(GET, URL_EVENTS + '?from_ts=' + from_ts + '&to_ts=' + to_ts + '&group=' + str(args.filter) + '&limit=999')
     for item in event_data['events']:
         try:
             if 'type' in item['o']:
@@ -508,7 +494,7 @@ def monitor():
     if args.monitor > 1:
         mode = 'Domoticz mode'
         print
-        restget(url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
+        rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
         domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(), basestation_data[0]['friendly_name'].lower())
     else:
         mode = 'Monitor mode'
@@ -516,7 +502,7 @@ def monitor():
     from_ts = str(int(time.time())*1000)
     try:
         while 1:
-            lastevents = restget(url_monitor + '&from_ts=' + from_ts)
+            lastevents = rest(GET, url_monitor + '&from_ts=' + from_ts)
             for item in reversed(lastevents['events']):
                 try:
                     if 'type' in item['o']:
@@ -536,12 +522,12 @@ def monitor():
                     continue
             if time.time() - auth_time >= AUTH_EXPIRE:
                 auth_time = time.time()
-                restget(URL_AUTH)
+                rest(GET, URL_AUTH)
             else:
                 time.sleep(1)
     except KeyboardInterrupt:
         if args.monitor > 1:
-            restget(url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
+            rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
     return
 
@@ -554,11 +540,11 @@ def domoticz(event, sid, friendly):
             cmd = 'off'
         else:
             cmd = 'on'
-        restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[sid])
+        rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[sid])
     else:
-        status_data = restget(URL_HEALTH)
-        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
-                LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
+        status_data = rest(GET, URL_HEALTH)
+        rest(GET, url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
+             LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
     sys.stdout.write("\033[F")
     sys.stdout.write("\033[K")
     return
@@ -586,7 +572,7 @@ def sensor():
 
 def rules():
     """List custom rule(s)."""
-    rules = restget(URL_BASE + '/' + basestation_data[0]['id'] + '/rules?rules=custom')
+    rules = rest(GET, URL_BASE + '/' + basestation_data[0]['id'] + '/rules?rules=custom')
     for item in rules:
         try:
             if item['active']:
@@ -611,7 +597,7 @@ def rules():
 
 def notifications():
     """List notification settings per mobile device."""
-    channels = restget(URL_CHANNEL)
+    channels = rest(GET, URL_CHANNEL)
     for item in channels.get('gcm', ''):
         try:
             print('[-] ' + item['friendlyName'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' |'),
@@ -637,7 +623,7 @@ def camera_info():
             print '| ssid ' + bcolors.OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + bcolors.ENDC
     except KeyError:
         print
-    stream_data = restget(URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
+    stream_data = rest(GET, URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
     for stream in ('m3u8', 'rtmp', 'rtsp'):
         log('Camera stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
     return
@@ -647,12 +633,12 @@ def record():
     """Start or stop camera recording based on current state."""
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
-    camera_status = restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/status')
+    camera_status = rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/status')
     if camera_status['description'] == 'Recording not started':
-        restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/start')
+        rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/start')
         log('Camera recording'.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ')
     if camera_status['description'] == 'Recording already started':
-        restget(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/stop')
+        rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/stop')
         log('Camera recording'.ljust(17) + ' | ' + color('stopped'.ljust(8)) + ' | ')
     return
 
