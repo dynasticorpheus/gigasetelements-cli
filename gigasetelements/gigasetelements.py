@@ -62,6 +62,9 @@ if os.name == 'nt':
     colorama.init()
     args.cronjob = None
     args.remove = False
+    ntconfig = os.path.join(os.environ['APPDATA'], 'gigasetelements-cli\gigasetelements-cli.conf')
+else:
+    ntconfig = ''
 
 if args.daemon and os.name != 'nt':
     from daemonize import Daemonize
@@ -199,7 +202,7 @@ def configure():
             pem = True
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
-                     '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'),
+                     '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'), ntconfig,
                      os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
         for i in locations:
             if os.path.exists(i):
