@@ -9,6 +9,7 @@ import gc
 import os
 import sys
 import time
+import random
 import datetime
 import argparse
 import json
@@ -44,6 +45,7 @@ parser.add_argument('-a', '--camera', help='show camera status', action='store_t
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
 parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
+parser.add_argument('-N', '--noupdate', help='do not periodically check for updates', action='store_true', required=False)
 parser.add_argument('-j', '--restart', help='automatically restart program in case of a connection error', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verification', action='store_true', required=False)
@@ -54,7 +56,7 @@ gc.disable()
 args = parser.parse_args()
 
 print
-print 'Gigaset Elements - Command-line Interface'
+print 'Gigaset Elements - Command-line Interface v' + _VERSION_
 print
 
 if os.name == 'nt':
@@ -99,7 +101,8 @@ if args.cronjob is None and args.remove is False:
     POST = s.post
     GET = s.get
     HEAD = s.head
-
+else:
+    args.noupdate = True
 
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
@@ -108,6 +111,7 @@ URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
+URL_RELEASE = 'https://api.github.com/repos/dynasticorpheus/gigasetelements-cli/releases/latest'
 URL_USAGE = 'https://goo.gl/wjLswA'
 
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
@@ -171,7 +175,7 @@ def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
     green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon',
              'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
-    orange = ['orange', 'warning']
+    orange = ['orange', 'warning', 'update']
     if args.log is not None:
         txt = txt.upper()
     else:
@@ -247,6 +251,8 @@ def configure():
         else:
             if config.getboolean('options', 'nowarning'):
                 args.warning = True
+            if config.getboolean('options', 'noupdate'):
+                args.noupdate = True
     if None in (args.username, args.password):
         log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Username and/or password missing', 3, 1)
     return
@@ -299,6 +305,15 @@ def connect():
     if args.modus is None:
         log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) +
             status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
+    return
+
+
+def check_version():
+    from distutils.version import LooseVersion, StrictVersion
+    remotedata = rest(GET, URL_RELEASE, None, AGENT, 3, 0)
+    remoteversion = str(remotedata['tag_name'])
+    if LooseVersion(_VERSION_) < LooseVersion(remoteversion[1:]):
+        log('Program'.ljust(17) + ' | ' + color('update'.ljust(8)) + ' | Version ' + remoteversion[1:] + ' of gigasetelements-cli is available for download')
     return
 
 
@@ -653,6 +668,9 @@ def main():
 
     try:
         configure()
+
+        if not args.noupdate and random.randint(1, 10) == 1:
+            check_version()
 
         if args.cronjob is not None:
             add_cron()

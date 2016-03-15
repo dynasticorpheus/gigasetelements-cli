@@ -29,6 +29,9 @@ modus: home
 # suppress urllib3 warnings {true,false} (optional)
 nowarning: true
 
+# disable periodical check for updates {true,false} (optional)
+noupdate: false
+
 [domoticz]
 
 # domoticz server ip address (required)
