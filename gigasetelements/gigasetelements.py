@@ -111,7 +111,7 @@ URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
-URL_RELEASE = 'https://api.github.com/repos/dynasticorpheus/gigasetelements-cli/releases/latest'
+URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
 URL_USAGE = 'https://goo.gl/wjLswA'
 
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
@@ -311,9 +311,10 @@ def connect():
 def check_version():
     from distutils.version import LooseVersion, StrictVersion
     remotedata = rest(GET, URL_RELEASE, None, AGENT, 3, 0)
-    remoteversion = str(remotedata['tag_name'])
-    if LooseVersion(_VERSION_) < LooseVersion(remoteversion[1:]):
-        log('Program'.ljust(17) + ' | ' + color('update'.ljust(8)) + ' | Version ' + remoteversion[1:] + ' of gigasetelements-cli is available for download')
+    remoteversion = str(remotedata['info']['version'])
+    if LooseVersion(_VERSION_) < LooseVersion(remoteversion):
+        log('Program'.ljust(17) + ' | ' + color('update'.ljust(8)) + ' | Version ' + remoteversion +
+            ' is available. Run pip install --upgrade gigasetelements-cli')
     return
 
 
