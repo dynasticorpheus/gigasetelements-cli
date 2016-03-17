@@ -20,6 +20,27 @@ import unidecode
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.4.0'
 
+LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
+OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
+AGENT = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
+CONTENT = {'content-type': 'application/json; charset=UTF-8'}
+AUTH_EXPIRE = 21540
+
+URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
+URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
+URL_EVENTS = 'https://api.gigaset-elements.de/api/v2/me/events'
+URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
+URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
+URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
+URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
+URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
+URL_USAGE = 'https://goo.gl/wjLswA'
+
+URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
+URL_ALERT = '/json.htm?type=command&param=udevice&idx='
+URL_LOG = '/json.htm?type=command&param=addlogmessage&message='
+
+
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
 parser.add_argument('-u', '--username', help='username (email) in use with my.gigaset-elements.com', required=False)
@@ -49,11 +70,12 @@ parser.add_argument('-N', '--noupdate', help='do not periodically check for upda
 parser.add_argument('-j', '--restart', help='automatically restart program in case of a connection error', action='store_true', required=False)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verification', action='store_true', required=False)
-parser.add_argument('-w', '--warning', help='suppress urllib3 warnings', action='store_true', required=False)
+parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
 gc.disable()
 args = parser.parse_args()
+config = ConfigParser.ConfigParser(defaults=OPTDEF)
 
 print
 print 'Gigaset Elements - Command-line Interface v' + _VERSION_
@@ -103,27 +125,6 @@ if args.cronjob is None and args.remove is False:
     HEAD = s.head
 else:
     args.noupdate = True
-
-URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
-URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
-URL_EVENTS = 'https://api.gigaset-elements.de/api/v2/me/events'
-URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
-URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
-URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
-URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
-URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
-URL_USAGE = 'https://goo.gl/wjLswA'
-
-URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
-URL_ALERT = '/json.htm?type=command&param=udevice&idx='
-URL_LOG = '/json.htm?type=command&param=addlogmessage&message='
-
-LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
-
-AUTH_EXPIRE = 21540
-
-AGENT = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
-CONTENT = {'content-type': 'application/json; charset=UTF-8'}
 
 
 class bcolors:
@@ -188,6 +189,21 @@ def color(txt):
     return txt
 
 
+def load_option(arg, section, option):
+    fromfile = False
+    if arg is None:
+        arg = config.get(section, option)
+        if arg == '' or arg is None:
+            arg = None
+        else:
+            fromfile = True
+    elif isinstance(arg, bool):
+        if config.getboolean(section, option):
+            arg = True
+            fromfile = True
+    return arg, fromfile
+
+
 def configure():
     """Load variables based on command line arguments and config file."""
     global dconfig
@@ -196,14 +212,6 @@ def configure():
     global pem
     credfromfile = False
     authstring = ''
-    if args.insecure:
-        pem = False
-    else:
-        try:
-            import certifi
-            pem = certifi.old_where()
-        except Exception:
-            pem = True
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                      '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'), ntconfig,
@@ -217,7 +225,6 @@ def configure():
         if not os.path.exists(args.config):
             log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | File does not exist ' + args.config, 3, 1)
     if args.config is not None:
-        config = ConfigParser.ConfigParser()
         config.read(args.config)
         if args.monitor > 1:
             try:
@@ -228,33 +235,28 @@ def configure():
             except Exception:
                 log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Domoticz setting(s) incorrect and/or missing', 3, 1)
         log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
-        if args.username is None:
-            args.username = config.get('accounts', 'username')
-            credfromfile = True
-        if args.username == '':
-            args.username = None
-            credfromfile = False
-        if args.password is None:
-            args.password = config.get('accounts', 'password')
-            credfromfile = True
-        if args.password == '':
-            args.password = None
-            credfromfile = False
-        if args.modus is None:
-            args.modus = config.get('options', 'modus')
-        if args.modus == '':
-            args.modus = None
-        if args.notify is None:
-            args.notify = config.get('accounts', 'pbtoken')
-        if args.notify == '':
-            args.notify = None
-        else:
-            if config.getboolean('options', 'nowarning'):
-                args.warning = True
-            if config.getboolean('options', 'noupdate'):
-                args.noupdate = True
+        args.noupdate, credfromfile = load_option(args.noupdate, 'options', 'noupdate')
+        args.silent, credfromfile = load_option(args.silent, 'options', 'silent')
+        args.insecure, credfromfile = load_option(args.insecure, 'options', 'insecure')
+        args.modus, credfromfile = load_option(args.modus, 'options', 'modus')
+        args.notify, credfromfile = load_option(args.notify, 'accounts', 'pbtoken')
+        args.username, credfromfile = load_option(args.username, 'accounts', 'username')
+        args.password, credfromfile = load_option(args.password, 'accounts', 'password')
     if None in (args.username, args.password):
         log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Username and/or password missing', 3, 1)
+    if args.silent:
+        try:
+            requests.packages.urllib3.disable_warnings()
+        except Exception:
+            pass
+    if args.insecure:
+        pem = False
+    else:
+        try:
+            import certifi
+            pem = certifi.old_where()
+        except Exception:
+            pem = True
     return
 
 
@@ -282,11 +284,6 @@ def connect():
     global status_data
     global camera_data
     global auth_time
-    if args.warning:
-        try:
-            requests.packages.urllib3.disable_warnings()
-        except Exception:
-            pass
     payload = {'password': args.password, 'email': args.username}
     commit_data = rest(POST, URL_IDENTITY, payload)
     log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])

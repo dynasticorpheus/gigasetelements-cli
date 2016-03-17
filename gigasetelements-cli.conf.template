@@ -2,49 +2,62 @@
 #
 # Note: command-line options override below values  
 #
-# On POSIX configuration file is automatically read from below locations:
-# ~/.gigasetelements-cli
+# The configuration file is automatically read from below locations:
+#
+# POSIX
+# ~/.gigasetelements-cli/gigasetelements-cli.conf
 # /etc/gigasetelements-cli.conf
 # /usr/etc/gigasetelements-cli.conf
 # /usr/local/etc/gigasetelements-cli.conf
 # /opt/etc/gigasetelements-cli.conf
+#
+# OS X
+# ~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf
+#
+# WINDOWS
+# %APPDATA%\gigasetelements-cli\gigasetelements-cli.conf
+
 
 [accounts]
 
 # username (email) in use with my.gigaset-elements.com
-username: first.last@domain.com
+username=first.last@domain.com
 
 # password in use with my.gigaset-elements.com
-password: mybigsecret
+password=mybigsecret
 
-# add token to enable pushbullet notification (optional)
-pbtoken: z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
+# access token to enable pushbullet notifications (optional)
+# pbtoken=z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
 
 
 [options]
 
 # set modus {home,away,custom} (optional)
-modus: home
+# modus=home
+
+# disable SSL/TLS certificate verification {true,false} (optional)
+# insecure=false
 
 # suppress urllib3 warnings {true,false} (optional)
-nowarning: true
+# silent=false
 
-# disable periodical check for updates {true,false} (optional)
-noupdate: false
+# Don't periodically check PyPI to determine whether a new version of gigasetelements-cli is available for download {true,false} (optional)
+# noupdate= false
+
 
 [domoticz]
 
 # domoticz server ip address (required)
-ip: 127.0.0.1
+ip=127.0.0.1
 
 # domoticz server port (required)
-port: 8080
+port=8080
 
 # domoticz user name (optional)
-username:
+username=
 
 # domoticz password (optional)
-password:
+password=
 
 # domoticz idx sensor pairing (required)
 
@@ -57,10 +70,10 @@ password:
 # 7. Run "gigasetelements-cli -a" to get camera sensor id. Use the 12 uppercase digits in stream url. This MAC address can also be found on the back of the camera.
 
 # example motion/door/window/siren/plug
-# 123FC4577H: 99
+# 123FC4577H=99
 
 # example basestation id
-# F32A76C4DHJ1B743A0E0D74EFD2375D1: 98
+# F32A76C4DHJ1B743A0E0D74EFD2375D1=98
 
 # example camera id
-# 7C2G30873SED: 97
+# 7C2G30873SED=97
