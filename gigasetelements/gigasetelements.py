@@ -260,22 +260,26 @@ def configure():
     return
 
 
-def rest(method, url, payload=None, header=AGENT, timeout=90, end=1):
+def rest(method, url, payload=None, header=AGENT, timeout=90, end=1, silent=False):
     """REST interaction using requests module."""
+    r = None
     try:
         if method == POST:
             r = method(url, timeout=timeout, data=payload, headers=header, allow_redirects=True, verify=pem)
         else:
             r = method(url, timeout=timeout, headers=header, allow_redirects=True, verify=pem)
     except requests.exceptions.RequestException as e:
-        log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, end)
-    if r.status_code != requests.codes.ok:
-        log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, end)
-    try:
-        data = r.json()
-    except ValueError:
-        data = r.text
-    return data
+        if not silent:
+            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, end)
+    if r is not None:
+        if not silent:
+            if r.status_code != requests.codes.ok:
+                log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, end)
+        try:
+            data = r.json()
+        except ValueError:
+            data = r.text
+        return data
 
 
 def connect():
@@ -290,7 +294,7 @@ def connect():
     auth_time = time.time()
     rest(GET, URL_AUTH)
     log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
-    rest(HEAD, URL_USAGE, None, AGENT, 3, 0)
+    rest(HEAD, URL_USAGE, None, AGENT, 2, 0, True)
     basestation_data = rest(GET, URL_BASE)
     log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
     camera_data = rest(GET, URL_CAMERA)
@@ -307,11 +311,12 @@ def connect():
 
 def check_version():
     from distutils.version import LooseVersion, StrictVersion
-    remotedata = rest(GET, URL_RELEASE, None, AGENT, 3, 0)
-    remoteversion = str(remotedata['info']['version'])
-    if LooseVersion(_VERSION_) < LooseVersion(remoteversion):
-        log('Program'.ljust(17) + ' | ' + color('update'.ljust(8)) + ' | Version ' + remoteversion +
-            ' is available. Run pip install --upgrade gigasetelements-cli')
+    remotedata = rest(GET, URL_RELEASE, None, AGENT, 2, 0, True)
+    if remotedata is not None:
+        remoteversion = str(remotedata['info']['version'])
+        if LooseVersion(_VERSION_) < LooseVersion(remoteversion):
+            log('Program'.ljust(17) + ' | ' + color('update'.ljust(8)) + ' | Version ' + remoteversion +
+                ' is available. Run pip install --upgrade gigasetelements-cli')
     return
 
 
