@@ -274,7 +274,7 @@ def rest(method, url, payload=None, header=AGENT, timeout=90, end=1, silent=Fals
     if r is not None:
         if not silent:
             if r.status_code != requests.codes.ok:
-                log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, end)
+                log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + r.reason + ' ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, end)
         try:
             data = r.json()
         except ValueError:
