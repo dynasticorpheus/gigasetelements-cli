@@ -11,6 +11,7 @@ import sys
 import time
 import random
 import datetime
+import urlparse
 import argparse
 import json
 import ConfigParser
@@ -24,7 +25,7 @@ LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
 AGENT = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
 CONTENT = {'content-type': 'application/json; charset=UTF-8'}
-AUTH_EXPIRE = 21540
+AUTH_EXPIRE = 14400
 
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
@@ -270,11 +271,12 @@ def rest(method, url, payload=None, header=AGENT, timeout=90, end=1, silent=Fals
             r = method(url, timeout=timeout, headers=header, allow_redirects=True, verify=pem)
     except requests.exceptions.RequestException as e:
         if not silent:
-            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(time.strftime('%m/%d/%y %H:%M:%S')) + ' ' + str(e.message), 3, end)
+            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(e.message), 3, end)
     if r is not None:
         if not silent:
             if r.status_code != requests.codes.ok:
-                log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + r.reason + ' ' + str(time.strftime('%m/%d/%y %H:%M:%S')), 3, end)
+                u = urlparse.urlparse(r.url)
+                log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + r.reason + ' ' + str(u.path), 3, end)
         try:
             data = r.json()
         except ValueError:
@@ -544,6 +546,7 @@ def monitor():
             if time.time() - auth_time >= AUTH_EXPIRE:
                 auth_time = time.time()
                 rest(GET, URL_AUTH)
+                log('Re-authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
             else:
                 time.sleep(1)
     except KeyboardInterrupt:
