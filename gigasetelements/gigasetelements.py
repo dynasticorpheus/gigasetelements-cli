@@ -15,16 +15,20 @@ import urlparse
 import argparse
 import json
 import ConfigParser
+import logging
 import unidecode
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.4.0'
 
+OKGREEN = '\033[92m'
+WARN = '\033[93m'
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
-AGENT = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
-CONTENT = {'content-type': 'application/json; charset=UTF-8'}
 AUTH_EXPIRE = 14400
 
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
@@ -40,7 +44,6 @@ URL_USAGE = 'https://goo.gl/wjLswA'
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
 URL_LOG = '/json.htm?type=command&param=addlogmessage&message='
-
 
 parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
@@ -87,7 +90,7 @@ if os.name == 'nt':
     colorama.init()
     args.cronjob = None
     args.remove = False
-    ntconfig = os.path.join(os.environ['APPDATA'], 'gigasetelements-cli\gigasetelements-cli.conf')
+    ntconfig = os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))
 else:
     ntconfig = ''
 
@@ -97,19 +100,18 @@ if args.daemon and os.name != 'nt':
         target = open(args.pid, 'w')
         target.close()
     except IOError:
-        print('\033[91m' + '[-] Unable to write pid file ' + args.pid + '\033[0m')
+        print FAIL + '[-] Unable to write pid file ' + args.pid + ENDC
         print
         sys.exit()
 
 if args.log is not None:
-    import logging
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.propagate = False
     try:
         fh = logging.FileHandler(args.log, 'a')
     except IOError:
-        print('\033[91m' + '[-] Unable to write log file ' + args.log + '\033[0m')
+        print FAIL + '[-] Unable to write log file ' + args.log + ENDC
         print
         sys.exit()
     fh.setLevel(logging.INFO)
@@ -128,18 +130,6 @@ else:
     args.noupdate = True
 
 
-class bcolors:
-    """Define color classes."""
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARN = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-
 def restart_program():
     """Restarts the current program."""
     python = sys.executable
@@ -154,11 +144,11 @@ def log(logme, rbg=0, exitnow=0, newline=1):
     if args.log is not None:
         logger.info('[' + time.strftime("%c") + '] ' + unidecode.unidecode(unicode(logme)))
     if rbg == 1:
-        print bcolors.OKGREEN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+        print OKGREEN + '[-] ' + logme.encode('utf-8') + ENDC
     elif rbg == 2:
-        print bcolors.WARN + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+        print WARN + '[-] ' + logme.encode('utf-8') + ENDC
     elif rbg == 3:
-        print bcolors.FAIL + '[-] ' + logme.encode('utf-8') + bcolors.ENDC
+        print FAIL + '[-] ' + logme.encode('utf-8') + ENDC
     else:
         if newline == 1:
             print '[-] ' + logme.encode('utf-8')
@@ -182,15 +172,16 @@ def color(txt):
         txt = txt.upper()
     else:
         if txt.lower().strip() in green:
-            txt = bcolors.OKGREEN + txt.upper() + bcolors.ENDC
+            txt = OKGREEN + txt.upper() + ENDC
         elif txt.lower().strip() in orange:
-            txt = bcolors.WARN + txt.upper() + bcolors.ENDC
+            txt = WARN + txt.upper() + ENDC
         else:
-            txt = bcolors.FAIL + txt.upper() + bcolors.ENDC
+            txt = FAIL + txt.upper() + ENDC
     return txt
 
 
 def load_option(arg, section, option):
+    """Load options safely from conf file."""
     fromfile = False
     if arg is None:
         arg = config.get(section, option)
@@ -261,26 +252,30 @@ def configure():
     return
 
 
-def rest(method, url, payload=None, header=AGENT, timeout=90, end=1, silent=False):
+def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=False):
     """REST interaction using requests module."""
-    r = None
+    request = None
+    if header:
+        header = {'content-type': 'application/json; charset=UTF-8'}
+    else:
+        header = {'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
     try:
         if method == POST:
-            r = method(url, timeout=timeout, data=payload, headers=header, allow_redirects=True, verify=pem)
+            request = method(url, timeout=timeout, data=payload, headers=header, allow_redirects=True, verify=pem)
         else:
-            r = method(url, timeout=timeout, headers=header, allow_redirects=True, verify=pem)
-    except requests.exceptions.RequestException as e:
+            request = method(url, timeout=timeout, headers=header, allow_redirects=True, verify=pem)
+    except requests.exceptions.RequestException as error:
         if not silent:
-            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(e.message), 3, end)
-    if r is not None:
+            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(error.message), 3, end)
+    if request is not None:
         if not silent:
-            if r.status_code != requests.codes.ok:
-                u = urlparse.urlparse(r.url)
-                log('HTTP ERROR'.ljust(17) + ' | ' + str(r.status_code).ljust(8) + ' | ' + r.reason + ' ' + str(u.path), 3, end)
+            if request.status_code != requests.codes.ok:
+                u = urlparse.urlparse(request.url)
+                log('HTTP ERROR'.ljust(17) + ' | ' + str(request.status_code).ljust(8) + ' | ' + request.reason + ' ' + str(u.path), 3, end)
         try:
-            data = r.json()
+            data = request.json()
         except ValueError:
-            data = r.text
+            data = request.text
         return data
 
 
@@ -296,7 +291,7 @@ def connect():
     auth_time = time.time()
     rest(GET, URL_AUTH)
     log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
-    rest(HEAD, URL_USAGE, None, AGENT, 2, 0, True)
+    rest(HEAD, URL_USAGE, None, False, 2, 0, True)
     basestation_data = rest(GET, URL_BASE)
     log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
     camera_data = rest(GET, URL_CAMERA)
@@ -312,8 +307,9 @@ def connect():
 
 
 def check_version():
+    """Check if new version exists on pypi."""
     from distutils.version import LooseVersion, StrictVersion
-    remotedata = rest(GET, URL_RELEASE, None, AGENT, 2, 0, True)
+    remotedata = rest(GET, URL_RELEASE, None, False, 2, 0, True)
     if remotedata is not None:
         remoteversion = str(remotedata['info']['version'])
         if LooseVersion(_VERSION_) < LooseVersion(remoteversion):
@@ -381,14 +377,14 @@ def siren():
     """Dis(arm) siren."""
     if not sensor_exist['indoor_siren']:
         log('Siren'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
-    modus = ['home', 'away', 'custom']
+    moduslist = ['home', 'away', 'custom']
     if args.siren == 'disarm':
-        for m in modus:
-            switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": False}}]}}
+        for modus in moduslist:
+            switch = {"intrusion_settings": {"modes": [{modus: {"sirens_on": False}}]}}
             rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     else:
-        for m in modus:
-            switch = {"intrusion_settings": {"modes": [{m: {"sirens_on": True}}]}}
+        for modus in moduslist:
+            switch = {"intrusion_settings": {"modes": [{modus: {"sirens_on": True}}]}}
             rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Siren'.ljust(17) + ' | ' + color((args.siren + 'ED').ljust(8)) + ' | ')
     return
@@ -399,7 +395,7 @@ def plug():
     if not sensor_exist['smart_plug']:
         log('Plug'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     switch = {"name": args.plug}
-    rest(POST, URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch), CONTENT)
+    rest(POST, URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch), True)
     log('Plug'.ljust(17) + ' | ' + color(args.plug.ljust(8)) + ' | ')
     return
 
@@ -465,13 +461,13 @@ def pb_message(pbmsg):
     if args.notify is not None and args.quiet is not True:
         from pushbullet import PushBullet, InvalidKeyError, PushbulletError
         try:
-            pb = PushBullet(args.notify)
+            pushb = PushBullet(args.notify)
         except InvalidKeyError:
             log('Notification'.ljust(17) + ' | ' + color('token'.ljust(8)) + ' | ')
         except PushbulletError:
             log('Notification'.ljust(17) + ' | ' + color('error'.ljust(8)) + ' | ')
         else:
-            pb.push_note('Gigaset Elements', pbmsg)
+            pushb.push_note('Gigaset Elements', pbmsg)
             log('Notification'.ljust(17) + ' | ' + color('pushed'.ljust(8)) + ' | ')
     return
 
@@ -522,7 +518,7 @@ def monitor():
     else:
         mode = 'Monitor mode'
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
-    from_ts = str(int(time.time())*1000)
+    from_ts = str(int(time.time()) * 1000)
     try:
         while 1:
             lastevents = rest(GET, url_monitor + '&from_ts=' + from_ts)
@@ -596,8 +592,8 @@ def sensor():
 
 def rules():
     """List custom rule(s)."""
-    rules = rest(GET, URL_BASE + '/' + basestation_data[0]['id'] + '/rules?rules=custom')
-    for item in rules:
+    ruleset = rest(GET, URL_BASE + '/' + basestation_data[0]['id'] + '/rules?rules=custom')
+    for item in ruleset:
         try:
             if item['active']:
                 item['active'] = 'active'
@@ -644,7 +640,7 @@ def camera_info():
               color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
         print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
         if camera_data[0]['settings']['connection'] == 'wifi':
-            print '| ssid ' + bcolors.OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + bcolors.ENDC
+            print '| ssid ' + OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + ENDC
     except KeyError:
         print
     stream_data = rest(GET, URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
