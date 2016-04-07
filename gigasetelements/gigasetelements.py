@@ -308,7 +308,7 @@ def connect():
 
 def check_version():
     """Check if new version exists on pypi."""
-    from distutils.version import LooseVersion, StrictVersion
+    from distutils.version import LooseVersion
     remotedata = rest(GET, URL_RELEASE, None, False, 2, 0, True)
     if remotedata is not None:
         remoteversion = str(remotedata['info']['version'])
