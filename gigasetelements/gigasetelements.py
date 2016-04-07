@@ -599,17 +599,7 @@ def rules():
                 item['active'] = 'active'
             else:
                 item['active'] = 'inactive'
-            if item['parameter']['start_time'] == 0 and item['parameter']['end_time'] == 86400:
-                timer = '00:00 - 00:00'.ljust(13)
-            else:
-                timer = str(datetime.timedelta(seconds=int(item['parameter']['start_time']))).rjust(8, '0')[
-                    0:5] + ' - ' + str(datetime.timedelta(seconds=int(item['parameter']['end_time']))).rjust(8, '0')[0:5]
-            if item['parameter']['repeater']['frequency'] == 'daily':
-                days = '1, 2, 3, 4, 5, 6, 7'
-            else:
-                days = str(item['parameter']['repeater']['at']).replace('[', '').replace(']', '').ljust(19)
-            log(item['friendly_name'].ljust(17) + ' | ' + color(item['active'].ljust(8)) + ' | ' + item['parameter']['repeater']
-                ['frequency'].ljust(7) + ' | ' + timer + ' | ' + days + ' | ' + item['recipe'].replace('_', ' ') + ' | ' + item['id'])
+            log(item['friendly_name'].ljust(17) + ' | ' + color(item['active'].ljust(8)) + ' | ' + item['friendly_description'])
         except KeyError:
             continue
     return
