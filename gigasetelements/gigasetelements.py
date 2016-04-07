@@ -323,7 +323,7 @@ def collect_hw():
     global sensor_id
     global sensor_exist
     sensor_id = {}
-    sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug'], False)
+    sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug', 'smoke'], False)
     for item in basestation_data[0]['sensors']:
         sensor_id.setdefault(item['type'], []).append(item['id'])
     try:
@@ -339,6 +339,8 @@ def collect_hw():
         sensor_exist.update(dict.fromkeys(['button'], True))
     if 'yc01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['camera'], True))
+    if 'sd01' in sensor_id:
+        sensor_exist.update(dict.fromkeys(['smoke'], True))
     if 'ws02' in sensor_id:
         sensor_exist.update(dict.fromkeys(['window_sensor'], True))
     if 'ps01' in sensor_id or 'ps02' in sensor_id:
