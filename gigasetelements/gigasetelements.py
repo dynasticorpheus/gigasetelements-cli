@@ -5,18 +5,35 @@
 """Main code for gigasetelements command-line interface."""
 
 
-import gc
 import os
 import sys
 import time
-import random
 import datetime
 import urlparse
 import argparse
 import json
 import ConfigParser
 import logging
-import unidecode
+
+try:
+    from pushbullet import PushBullet, InvalidKeyError, PushbulletError
+    import requests
+    import unidecode
+except ImportError as error:
+    sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
+
+if os.name == 'nt':
+    try:
+        import colorama
+    except ImportError as error:
+        sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
+
+if os.name == 'posix':
+    try:
+        from crontab import CronTab
+        from daemonize import Daemonize
+    except ImportError as error:
+        sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
@@ -77,25 +94,18 @@ parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verifi
 parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
-gc.disable()
 args = parser.parse_args()
 config = ConfigParser.ConfigParser(defaults=OPTDEF)
 
-print
-print 'Gigaset Elements - Command-line Interface v' + _VERSION_
-print
-
 if os.name == 'nt':
-    import colorama
     colorama.init()
     args.cronjob = None
     args.remove = False
-    ntconfig = os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))
+    NTCONFIG = os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))
 else:
-    ntconfig = ''
+    NTCONFIG = ''
 
 if args.daemon and os.name != 'nt':
-    from daemonize import Daemonize
     try:
         target = open(args.pid, 'w')
         target.close()
@@ -104,22 +114,7 @@ if args.daemon and os.name != 'nt':
         print
         sys.exit()
 
-if args.log is not None:
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
-    try:
-        fh = logging.FileHandler(args.log, 'a')
-    except IOError:
-        print FAIL + '[-] Unable to write log file ' + args.log + ENDC
-        print
-        sys.exit()
-    fh.setLevel(logging.INFO)
-    logger.addHandler(fh)
-    logger.info('[' + time.strftime("%c") + '] Gigaset Elements - Command-line Interface')
-
 if args.cronjob is None and args.remove is False:
-    import requests
     s = requests.Session()
     s.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
     s.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
@@ -142,6 +137,7 @@ def log(logme, rbg=0, exitnow=0, newline=1):
     if os.name == 'nt':
         logme = unidecode.unidecode(unicode(logme))
     if args.log is not None:
+        logger = logging.getLogger(__name__)
         logger.info('[' + time.strftime("%c") + '] ' + unidecode.unidecode(unicode(logme)))
     if rbg == 1:
         print OKGREEN + '[-] ' + logme.encode('utf-8') + ENDC
@@ -198,15 +194,13 @@ def load_option(arg, section, option):
 
 def configure():
     """Load variables based on command line arguments and config file."""
-    global dconfig
-    global url_domo
-    global credfromfile
-    global pem
+    cfg_domo = None
+    url_domo = None
     credfromfile = False
     authstring = ''
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
-                     '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'), ntconfig,
+                     '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'), NTCONFIG,
                      os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
         for i in locations:
             if os.path.exists(i):
@@ -220,10 +214,10 @@ def configure():
         config.read(args.config)
         if args.monitor > 1:
             try:
-                dconfig = dict(config.items('domoticz'))
-                if dconfig['username'] != '':
-                    authstring = dconfig['username'] + ':' + dconfig['password'] + '@'
-                url_domo = 'http://' + authstring + dconfig['ip'] + ':' + dconfig['port']
+                cfg_domo = dict(config.items('domoticz'))
+                if cfg_domo['username'] != '':
+                    authstring = cfg_domo['username'] + ':' + cfg_domo['password'] + '@'
+                url_domo = 'http://' + authstring + cfg_domo['ip'] + ':' + cfg_domo['port']
             except Exception:
                 log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Domoticz setting(s) incorrect and/or missing', 3, 1)
         log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
@@ -241,20 +235,16 @@ def configure():
             requests.packages.urllib3.disable_warnings()
         except Exception:
             pass
-    if args.insecure:
-        pem = False
-    else:
-        try:
-            import certifi
-            pem = certifi.old_where()
-        except Exception:
-            pem = True
-    return
+    return url_domo, cfg_domo, credfromfile
 
 
 def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=False):
     """REST interaction using requests module."""
     request = None
+    if args.insecure:
+        pem = False
+    else:
+        pem = True
     if header:
         header = {'content-type': 'application/json; charset=UTF-8'}
     else:
@@ -269,9 +259,9 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
             log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(error.message), 3, end)
     if request is not None:
         if not silent:
-            if request.status_code != requests.codes.ok:
-                u = urlparse.urlparse(request.url)
-                log('HTTP ERROR'.ljust(17) + ' | ' + str(request.status_code).ljust(8) + ' | ' + request.reason + ' ' + str(u.path), 3, end)
+            if request.status_code != requests.codes.ok:  # pylint: disable=no-member
+                urlsplit = urlparse.urlparse(request.url)
+                log('HTTP ERROR'.ljust(17) + ' | ' + str(request.status_code).ljust(8) + ' | ' + request.reason + ' ' + str(urlsplit.path), 3, end)
         try:
             data = request.json()
         except ValueError:
@@ -279,19 +269,24 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
         return data
 
 
-def connect():
-    """Gigaset Elements API authentication and status retrieval."""
-    global basestation_data
-    global status_data
-    global camera_data
-    global auth_time
-    payload = {'password': args.password, 'email': args.username}
-    commit_data = rest(POST, URL_IDENTITY, payload)
-    log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
+def authenticate(reauthenticate=False):
+    """Gigaset Elements API authentication."""
+    if not reauthenticate:
+        payload = {'password': args.password, 'email': args.username}
+        commit_data = rest(POST, URL_IDENTITY, payload)
+        log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
+        rest(HEAD, URL_USAGE, None, False, 2, 0, True)
     auth_time = time.time()
     rest(GET, URL_AUTH)
-    log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
-    rest(HEAD, URL_USAGE, None, False, 2, 0, True)
+    if not reauthenticate:
+        log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
+    else:
+        log('Re-authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
+    return auth_time
+
+
+def systemstatus():
+    """Gigaset Elements system status retrieval."""
     basestation_data = rest(GET, URL_BASE)
     log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
     camera_data = rest(GET, URL_CAMERA)
@@ -303,7 +298,7 @@ def connect():
     if args.modus is None:
         log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) +
             status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
-    return
+    return basestation_data, status_data, camera_data
 
 
 def check_version():
@@ -318,10 +313,8 @@ def check_version():
     return
 
 
-def collect_hw():
+def collect_hw(basestation_data, camera_data):
     """Retrieve sensor list and details."""
-    global sensor_id
-    global sensor_exist
     sensor_id = {}
     sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug', 'smoke'], False)
     for item in basestation_data[0]['sensors']:
@@ -347,10 +340,10 @@ def collect_hw():
         sensor_exist.update(dict.fromkeys(['presence_sensor'], True))
     if 'ds01' in sensor_id or 'ds02' in sensor_id:
         sensor_exist.update(dict.fromkeys(['door_sensor'], True))
-    return
+    return sensor_id, sensor_exist
 
 
-def modus_switch():
+def modus_switch(basestation_data, status_data):
     """Switch alarm modus."""
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
@@ -359,7 +352,7 @@ def modus_switch():
     return
 
 
-def set_delay():
+def set_delay(basestation_data):
     """Set alarm trigger delay."""
     linfo = ''
     delay = str(args.delay * 1000)
@@ -375,7 +368,7 @@ def set_delay():
     return
 
 
-def siren():
+def siren(basestation_data, sensor_exist):
     """Dis(arm) siren."""
     if not sensor_exist['indoor_siren']:
         log('Siren'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
@@ -392,7 +385,7 @@ def siren():
     return
 
 
-def plug():
+def plug(basestation_data, sensor_exist, sensor_id):
     """Switch Plug on or off."""
     if not sensor_exist['smart_plug']:
         log('Plug'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
@@ -411,9 +404,8 @@ def istimeformat(timestr):
         return False
 
 
-def add_cron():
+def add_cron(credfromfile):
     """Add job to crontab to set alarm modus."""
-    from crontab import CronTab
     if args.modus is None:
         log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Specify modus using -m option', 3, 1)
     if istimeformat(args.cronjob):
@@ -443,7 +435,6 @@ def add_cron():
 
 def remove_cron():
     """Remove all jobs from crontab setting alarm modus."""
-    from crontab import CronTab
     cron = CronTab(user=True)
     existing = cron.find_command('gigasetelements-cli')
     count = 0
@@ -461,7 +452,6 @@ def remove_cron():
 def pb_message(pbmsg):
     """Send message using pushbullet module."""
     if args.notify is not None and args.quiet is not True:
-        from pushbullet import PushBullet, InvalidKeyError, PushbulletError
         try:
             pushb = PushBullet(args.notify)
         except InvalidKeyError:
@@ -505,9 +495,8 @@ def list_events():
     return
 
 
-def monitor():
+def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
     """List events realtime optionally filtered by type."""
-    global auth_time
     if args.filter is None:
         url_monitor = URL_EVENTS + '?limit=10'
     else:
@@ -516,7 +505,8 @@ def monitor():
         mode = 'Domoticz mode'
         print
         rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
-        domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(), basestation_data[0]['friendly_name'].lower())
+        domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(), basestation_data[0]
+                 ['friendly_name'].lower(), basestation_data, url_domo, cfg_domo)
     else:
         mode = 'Monitor mode'
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
@@ -531,20 +521,19 @@ def monitor():
                             'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
                         if args.monitor > 1:
                             if item['o']['type'] == 'ycam':
-                                domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam')
+                                domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', basestation_data, url_domo, cfg_domo)
                             else:
-                                domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower())
+                                domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower(),
+                                         basestation_data, url_domo, cfg_domo)
                     else:
                         log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
                             ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
-                        domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower())
+                        domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower(), basestation_data, url_domo, cfg_domo)
                     from_ts = str(int(item['ts']) + 1)
                 except KeyError:
                     continue
             if time.time() - auth_time >= AUTH_EXPIRE:
-                auth_time = time.time()
-                rest(GET, URL_AUTH)
-                log('Re-authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
+                auth_time = authenticate(reauthenticate=True)
             else:
                 time.sleep(1)
     except KeyboardInterrupt:
@@ -554,25 +543,24 @@ def monitor():
     return
 
 
-def domoticz(event, sid, friendly):
+def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
     """Push events to domoticz server."""
-    global status_data
     if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
         if event in ['close', 'sirenoff', 'off']:
             cmd = 'off'
         else:
             cmd = 'on'
-        rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[sid])
+        rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + cfg_domo[sid])
     else:
         status_data = rest(GET, URL_HEALTH)
-        rest(GET, url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
+        rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()] + '&nvalue=' +
              LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
     sys.stdout.write("\033[F")
     sys.stdout.write("\033[K")
     return
 
 
-def sensor():
+def sensor(basestation_data):
     """Show sensor details and current state."""
     log(basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]
                                                                        ['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status']))
@@ -592,7 +580,7 @@ def sensor():
     return
 
 
-def rules():
+def rules(basestation_data):
     """List custom rule(s)."""
     ruleset = rest(GET, URL_BASE + '/' + basestation_data[0]['id'] + '/rules?rules=custom')
     for item in ruleset:
@@ -621,7 +609,7 @@ def notifications():
     return
 
 
-def camera_info():
+def camera_info(camera_data, sensor_exist):
     """Show camera details and current state."""
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
@@ -641,7 +629,7 @@ def camera_info():
     return
 
 
-def record():
+def record(camera_data, sensor_exist):
     """Start or stop camera recording based on current state."""
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
@@ -655,19 +643,40 @@ def record():
     return
 
 
-def main():
-    """Main program."""
-
-    pb_body = None
-
+def start_logger(logfile):
+    """Setup log file handler."""
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
     try:
-        configure()
+        filehandle = logging.FileHandler(logfile, 'a')
+    except IOError:
+        print FAIL + '[-] Unable to write log file ' + logfile + ENDC
+        print
+        sys.exit()
+    filehandle.setLevel(logging.INFO)
+    logger.addHandler(filehandle)
+    logger.info('[' + time.strftime("%c") + '] Gigaset Elements - Command-line Interface')
+    return
 
-        if not args.noupdate and random.randint(1, 10) == 1:
-            check_version()
+
+def base():
+    """Base program."""
+    pb_body = None
+    print
+    print 'Gigaset Elements - Command-line Interface v' + _VERSION_
+    print
+    try:
+        if args.log:
+            start_logger(args.log)
+
+        if args.daemon:
+            log('Run as background'.ljust(17) + ' | ' + color('daemon'.ljust(8)) + ' | ' + args.pid)
+
+        url_domo, cfg_domo, credfromfile = configure()
 
         if args.cronjob is not None:
-            add_cron()
+            add_cron(credfromfile)
             print
             sys.exit()
 
@@ -676,43 +685,47 @@ def main():
             print
             sys.exit()
 
-        connect()
+        check_version()
 
-        collect_hw()
+        auth_time = authenticate()
+
+        basestation_data, status_data, camera_data = systemstatus()
+
+        sensor_id, sensor_exist = collect_hw(basestation_data, camera_data)
 
         if args.modus is not None and args.cronjob is None:
-            modus_switch()
+            modus_switch(basestation_data, status_data)
             if args.sensor is not True:
                 pb_body = 'Status ' + status_data['system_health'].upper() + ' | Modus set from ' + \
                     basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
 
         if args.sensor:
-            sensor()
+            sensor(basestation_data)
             if status_data['status_msg_id'] == '':
                 status_data['status_msg_id'] = u'\u2713'
             pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
                 ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
 
         if args.delay is not None:
-            set_delay()
+            set_delay(basestation_data)
 
         if args.camera:
-            camera_info()
+            camera_info(camera_data, sensor_exist)
 
         if args.record:
-            record()
+            record(camera_data, sensor_exist)
 
         if args.notifications:
             notifications()
 
         if args.rules:
-            rules()
+            rules(basestation_data)
 
         if args.siren:
-            siren()
+            siren(basestation_data, sensor_exist)
 
         if args.plug:
-            plug()
+            plug(basestation_data, sensor_exist, sensor_id)
 
         if pb_body is not None:
             pb_message(pb_body)
@@ -723,15 +736,19 @@ def main():
             list_events()
 
         if args.monitor:
-            if args.daemon and os.name != 'nt':
-                log('Run as background'.ljust(17) + ' | ' + color('daemon'.ljust(8)) + ' | ' + args.pid)
-                print
-                daemon = Daemonize(app="gigasetelements-cli", pid=args.pid, action=monitor, auto_close_fds=False)
-                daemon.start()
-            else:
-                monitor()
+            monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo)
 
         print
 
     except KeyboardInterrupt:
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
+
+
+def main():
+    """Main program."""
+    if args.daemon and os.name != 'nt':
+        print
+        daemon = Daemonize(app="gigasetelements-cli", pid=args.pid, action=base, auto_close_fds=False)
+        daemon.start()
+    else:
+        base()
