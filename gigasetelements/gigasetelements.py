@@ -37,7 +37,7 @@ if os.name == 'posix':
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.4.0'
+_VERSION_ = '1.5.0b1'
 
 OKGREEN = '\033[92m'
 WARN = '\033[93m'
@@ -303,11 +303,11 @@ def systemstatus():
 
 def check_version():
     """Check if new version exists on pypi."""
-    from distutils.version import LooseVersion
+    from distutils.version import StrictVersion
     remotedata = rest(GET, URL_RELEASE, None, False, 2, 0, True)
     if remotedata is not None:
         remoteversion = str(remotedata['info']['version'])
-        if LooseVersion(_VERSION_) < LooseVersion(remoteversion):
+        if StrictVersion(_VERSION_) < StrictVersion(remoteversion):
             log('Program'.ljust(17) + ' | ' + color('update'.ljust(8)) + ' | Version ' + remoteversion +
                 ' is available. Run pip install --upgrade gigasetelements-cli')
     return
