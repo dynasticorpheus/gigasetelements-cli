@@ -39,10 +39,7 @@ if os.name == 'posix':
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.5.0b1'
 
-OKGREEN = '\033[92m'
-WARN = '\033[93m'
-FAIL = '\033[91m'
-ENDC = '\033[0m'
+OKGREEN, WARN, FAIL, ENDC = '\033[92m', '\033[93m', '\033[91m', '\033[0m'
 
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
@@ -118,9 +115,7 @@ if args.cronjob is None and args.remove is False:
     s = requests.Session()
     s.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
     s.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
-    POST = s.post
-    GET = s.get
-    HEAD = s.head
+    POST, GET, HEAD = s.post, s.get, s.head
 else:
     args.noupdate = True
 
@@ -194,10 +189,7 @@ def load_option(arg, section, option):
 
 def configure():
     """Load variables based on command line arguments and config file."""
-    cfg_domo = None
-    url_domo = None
-    credfromfile = False
-    authstring = ''
+    cfg_domo, url_domo, credfromfile, authstring = None, None, False, ''
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                      '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'), NTCONFIG,
