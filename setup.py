@@ -1,17 +1,23 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+"""Install routine for gigasetelements command-line interface."""
+
+import os
+import codecs
 from setuptools import setup, find_packages
-from codecs import open
-from os import path, name
 
 
-here = path.abspath(path.dirname(__file__))
+HERE = os.path.abspath(os.path.dirname(__file__))
 
 
-with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
+with codecs.open(os.path.join(HERE, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 packagelist = ['requests', 'pushbullet.py', 'unidecode']
 
-if name == 'nt':
+if os.name == 'nt':
     packagelist.append('colorama')
 else:
     packagelist.append('python-crontab')
@@ -19,7 +25,7 @@ else:
 
 setup(
     name='gigasetelements-cli',
-    version='1.4.0',
+    version='1.5.0b1',
     description='gigasetelements-cli allows you to control your \
     Gigaset Elements home security system from the command line.',
     long_description=long_description,
