@@ -113,8 +113,8 @@ if args.daemon and os.name != 'nt':
 
 if args.cronjob is None and args.remove is False:
     s = requests.Session()
-    s.mount("http://", requests.adapters.HTTPAdapter(max_retries=3))
-    s.mount("https://", requests.adapters.HTTPAdapter(max_retries=3))
+    s.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
+    s.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
     POST, GET, HEAD = s.post, s.get, s.head
 else:
     args.noupdate = True
@@ -133,7 +133,7 @@ def log(logme, rbg=0, exitnow=0, newline=1):
         logme = unidecode.unidecode(unicode(logme))
     if args.log is not None:
         logger = logging.getLogger(__name__)
-        logger.info('[' + time.strftime("%c") + '] ' + unidecode.unidecode(unicode(logme)))
+        logger.info('[' + time.strftime('%c') + '] ' + unidecode.unidecode(unicode(logme)))
     if rbg == 1:
         print OKGREEN + '[-] ' + logme.encode('utf-8') + ENDC
     elif rbg == 2:
@@ -547,8 +547,8 @@ def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
         status_data = rest(GET, URL_HEALTH)
         rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()] + '&nvalue=' +
              LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
-    sys.stdout.write("\033[F")
-    sys.stdout.write("\033[K")
+    sys.stdout.write('\033[F')
+    sys.stdout.write('\033[K')
     return
 
 
@@ -648,7 +648,7 @@ def start_logger(logfile):
         sys.exit()
     filehandle.setLevel(logging.INFO)
     logger.addHandler(filehandle)
-    logger.info('[' + time.strftime("%c") + '] ' + 'Gigaset Elements'.ljust(17) + ' | ' + _VERSION_.ljust(8) + ' | ' + 'Command-line Interface')
+    logger.info('[' + time.strftime('%c') + '] ' + 'Gigaset Elements'.ljust(17) + ' | ' + _VERSION_.ljust(8) + ' | ' + 'Command-line Interface')
     return
 
 
@@ -740,7 +740,7 @@ def main():
     """Main program."""
     if args.daemon and os.name != 'nt':
         print
-        daemon = Daemonize(app="gigasetelements-cli", pid=args.pid, action=base, auto_close_fds=False)
+        daemon = Daemonize(app='gigasetelements-cli', pid=args.pid, action=base, auto_close_fds=False)
         daemon.start()
     else:
         base()
