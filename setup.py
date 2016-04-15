@@ -15,11 +15,9 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(HERE, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-packagelist = ['requests', 'pushbullet.py', 'unidecode']
+packagelist = ['requests', 'pushbullet.py', 'unidecode', 'colorama']
 
-if os.name == 'nt':
-    packagelist.append('colorama')
-else:
+if os.name == 'posix':
     packagelist.append('python-crontab')
     packagelist.append('daemonize')
 

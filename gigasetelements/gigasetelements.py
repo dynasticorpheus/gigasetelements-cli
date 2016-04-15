@@ -16,17 +16,12 @@ import ConfigParser
 import logging
 
 try:
+    from colorama import init, Fore
     from pushbullet import PushBullet, InvalidKeyError, PushbulletError
     import requests
     import unidecode
 except ImportError as error:
     sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
-
-if os.name == 'nt':
-    try:
-        import colorama
-    except ImportError as error:
-        sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
 
 if os.name == 'posix':
     try:
@@ -38,8 +33,6 @@ if os.name == 'posix':
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.5.0b1'
-
-OKGREEN, WARN, FAIL, ENDC = '\033[92m', '\033[93m', '\033[91m', '\033[0m'
 
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
@@ -93,9 +86,9 @@ parser.add_argument('-v', '--version', help='show version', action='version', ve
 
 args = parser.parse_args()
 config = ConfigParser.ConfigParser(defaults=OPTDEF)
+init(autoreset=True)
 
 if os.name == 'nt':
-    colorama.init()
     args.cronjob = None
     args.remove = False
     NTCONFIG = os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))
@@ -107,7 +100,7 @@ if args.daemon and os.name != 'nt':
         target = open(args.pid, 'w')
         target.close()
     except IOError:
-        print FAIL + '[-] Unable to write pid file ' + args.pid + ENDC
+        print Fore.RED + '[-] Unable to write pid file ' + args.pid
         print
         sys.exit()
 
@@ -135,11 +128,11 @@ def log(logme, rbg=0, exitnow=0, newline=1):
         logger = logging.getLogger(__name__)
         logger.info('[' + time.strftime('%c') + '] ' + unidecode.unidecode(unicode(logme)))
     if rbg == 1:
-        print OKGREEN + '[-] ' + logme.encode('utf-8') + ENDC
+        print Fore.GREEN + '[-] ' + logme.encode('utf-8')
     elif rbg == 2:
-        print WARN + '[-] ' + logme.encode('utf-8') + ENDC
+        print Fore.YELLOW + '[-] ' + logme.encode('utf-8')
     elif rbg == 3:
-        print FAIL + '[-] ' + logme.encode('utf-8') + ENDC
+        print Fore.RED + '[-] ' + logme.encode('utf-8')
     else:
         if newline == 1:
             print '[-] ' + logme.encode('utf-8')
@@ -163,11 +156,11 @@ def color(txt):
         txt = txt.upper()
     else:
         if txt.lower().strip() in green:
-            txt = OKGREEN + txt.upper() + ENDC
+            txt = Fore.GREEN + txt.upper() + Fore.RESET
         elif txt.lower().strip() in orange:
-            txt = WARN + txt.upper() + ENDC
+            txt = Fore.YELLOW + txt.upper() + Fore.RESET
         else:
-            txt = FAIL + txt.upper() + ENDC
+            txt = Fore.RED + txt.upper() + Fore.RESET
     return txt
 
 
@@ -612,7 +605,7 @@ def camera_info(camera_data, sensor_exist):
               color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
         print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
         if camera_data[0]['settings']['connection'] == 'wifi':
-            print '| ssid ' + OKGREEN + str(camera_data[0]['wifi_ssid']).upper() + ENDC
+            print '| ssid ' + Fore.GREEN + str(camera_data[0]['wifi_ssid']).upper()
     except KeyError:
         print
     stream_data = rest(GET, URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
@@ -643,7 +636,7 @@ def start_logger(logfile):
     try:
         filehandle = logging.FileHandler(logfile, 'a')
     except IOError:
-        print FAIL + '[-] Unable to write log file ' + logfile + ENDC
+        print Fore.RED + '[-] Unable to write log file ' + logfile
         print
         sys.exit()
     filehandle.setLevel(logging.INFO)
