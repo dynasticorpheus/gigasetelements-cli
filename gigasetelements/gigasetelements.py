@@ -75,6 +75,7 @@ parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, ch
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
+parser.add_argument('-A', '--snapshot', help='download camera snapshot', action='store_true', required=False)
 parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-N', '--noupdate', help='do not periodically check for updates', action='store_true', required=False)
@@ -94,15 +95,6 @@ if os.name == 'nt':
     NTCONFIG = os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))
 else:
     NTCONFIG = ''
-
-if args.daemon and os.name != 'nt':
-    try:
-        target = open(args.pid, 'w')
-        target.close()
-    except IOError:
-        print Fore.RED + '[-] Unable to write pid file ' + args.pid
-        print
-        sys.exit()
 
 if args.cronjob is None and args.remove is False:
     s = requests.Session()
@@ -147,10 +139,22 @@ def log(logme, rbg=0, exitnow=0, newline=1):
     return
 
 
+def filewritable(filetype, fileloc, mustexit=1):
+    """Test if file can be opened for writing."""
+    writable = False
+    try:
+        target = open(fileloc, 'w')
+        target.close()
+        writable = True
+    except IOError as error:
+        log(filetype.ljust(17) + ' | ' + color('error'.ljust(8)) + ' | ' + str(error), 0, mustexit)
+    return writable
+
+
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
-    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon',
-             'wifi', 'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success']
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon', 'wifi',
+             'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success', 'download']
     orange = ['orange', 'warning', 'update']
     if args.log is not None:
         txt = txt.upper()
@@ -628,6 +632,19 @@ def record(camera_data, sensor_exist):
     return
 
 
+def getsnapshot(camera_data, sensor_exist):
+    """Download snapshot from camera."""
+    if not sensor_exist['camera']:
+        log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
+    image_name = 'snapshot_' + time.strftime('%y%m%d') + '_' + time.strftime('%H%M%S') + '.jpg'
+    if filewritable('Snapshot image', image_name, 0):
+        log('Camera snapshot'.ljust(17) + ' | ' + color('download'.ljust(8)) + ' | ' + image_name)
+        snapshot = s.get(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/snapshot')
+        with open(image_name, 'wb') as image:
+            image.write(snapshot.content)
+    return
+
+
 def start_logger(logfile):
     """Setup log file handler."""
     logger = logging.getLogger(__name__)
@@ -700,6 +717,9 @@ def base():
         if args.record:
             record(camera_data, sensor_exist)
 
+        if args.snapshot:
+            getsnapshot(camera_data, sensor_exist)
+
         if args.notifications:
             notifications()
 
@@ -733,7 +753,8 @@ def main():
     """Main program."""
     if args.daemon and os.name != 'nt':
         print
-        daemon = Daemonize(app='gigasetelements-cli', pid=args.pid, action=base, auto_close_fds=False)
-        daemon.start()
+        if filewritable('PID file', args.pid):
+            daemon = Daemonize(app='gigasetelements-cli', pid=args.pid, action=base, auto_close_fds=False)
+            daemon.start()
     else:
         base()
