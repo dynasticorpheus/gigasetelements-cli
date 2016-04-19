@@ -657,7 +657,7 @@ def start_logger(logfile):
         sys.exit()
     filehandle.setLevel(logging.INFO)
     logger.addHandler(filehandle)
-    logger.info('[' + time.strftime('%c') + '] ' + 'Gigaset Elements'.ljust(17) + ' | ' + _VERSION_.ljust(8) + ' | ' + 'Command-line Interface')
+    logger.info('[' + time.strftime('%c') + '] ' + 'Gigaset Elements'.ljust(17) + ' | ' + 'CLI'.ljust(8) + ' | ' + _VERSION_ + ' | ' + ' '.join(sys.argv[1:]))
     return
 
 
