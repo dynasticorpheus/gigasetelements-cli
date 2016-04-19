@@ -260,17 +260,16 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
 
 def authenticate(reauthenticate=False):
     """Gigaset Elements API authentication."""
-    if not reauthenticate:
-        payload = {'password': args.password, 'email': args.username}
-        commit_data = rest(POST, URL_IDENTITY, payload)
+    auth_time = time.time()
+    payload = {'password': args.password, 'email': args.username}
+    commit_data = rest(POST, URL_IDENTITY, payload)
+    rest(GET, URL_AUTH)
+    if reauthenticate:
+        log('Re-authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
+    else:
         log('Identity'.ljust(17) + ' | ' + color('verified') + ' | ' + commit_data['message'])
         rest(HEAD, URL_USAGE, None, False, 2, 0, True)
-    auth_time = time.time()
-    rest(GET, URL_AUTH)
-    if not reauthenticate:
         log('Authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
-    else:
-        log('Re-authentication'.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
     return auth_time
 
 
