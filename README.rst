@@ -25,7 +25,7 @@ For easy installation including dependencies simply run below command (with elev
 
 [2] install *dependencies*, pip install -r requirements.txt (with elevated privileges if needed)
 
-[3] *python setup.py install* (or run from source using wrapper ./gigasetelements-cli.py)
+[3] *python setup.py install --force* (or run from source using wrapper ./gigasetelements-cli.py)
 
 
 Features
