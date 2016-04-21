@@ -107,6 +107,8 @@ else:
 
 def restart_program():
     """Restarts the current program."""
+    if args.daemon:
+        os.remove(args.pid)
     python = sys.executable
     os.execl(python, python, * sys.argv)
     return
@@ -753,7 +755,7 @@ def main():
     if args.daemon and os.name != 'nt':
         print
         if filewritable('PID file', args.pid):
-            daemon = Daemonize(app='gigasetelements-cli', pid=args.pid, action=base, auto_close_fds=False)
+            daemon = Daemonize(app='gigasetelements-cli', pid=args.pid, action=base, auto_close_fds=False, chdir=os.path.dirname(os.path.abspath(sys.argv[0])))
             daemon.start()
     else:
         base()
