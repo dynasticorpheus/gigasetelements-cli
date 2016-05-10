@@ -192,6 +192,7 @@ def configure():
     if args.config is None:
         locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                      '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'), NTCONFIG,
+                     os.path.expanduser('~/.config/gigasetelements-cli/gigasetelements-cli.conf'), os.path.expanduser('~/.config/gigasetelements-cli.conf'),
                      os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
         for i in locations:
             if os.path.exists(i):
