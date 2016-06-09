@@ -432,10 +432,10 @@ def remove_cron():
     for i in existing:
         log('Cronjob'.ljust(17) + ' | ' + color('removed'.ljust(8)) + ' | ' + str(i))
         count += 1
-    cron.remove_all(comment='gigasetelements-cli')
     if count == 0:
         log('Cronjob'.ljust(17) + ' | ' + color('warning'.ljust(8)) + ' | ' + 'No items found for removal')
     else:
+        cron.remove_all(command='gigasetelements-cli')
         cron.write()
     return
 
