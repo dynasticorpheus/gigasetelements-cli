@@ -641,7 +641,7 @@ def getsnapshot(camera_data, sensor_exist):
     image_name = 'snapshot_' + time.strftime('%y%m%d') + '_' + time.strftime('%H%M%S') + '.jpg'
     if filewritable('Snapshot image', image_name, 0):
         log('Camera snapshot'.ljust(17) + ' | ' + color('download'.ljust(8)) + ' | ' + image_name)
-        snapshot = s.get(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/snapshot')
+        snapshot = s.get(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/snapshot?fresh=true')
         with open(image_name, 'wb') as image:
             image.write(snapshot.content)
     return
