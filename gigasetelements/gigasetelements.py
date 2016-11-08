@@ -32,7 +32,7 @@ if os.name == 'posix':
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.5.0b1'
+_VERSION_ = '1.5.0b2'
 
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
@@ -536,12 +536,14 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
 
 def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
     """Push events to domoticz server."""
-    if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
+    if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion']:
         if event in ['close', 'sirenoff', 'off']:
             cmd = 'off'
         else:
             cmd = 'on'
         rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + cfg_domo[sid])
+    elif event in ['button1', 'button2', 'button3', 'button4']:
+        rest(GET, url_domo + URL_ALERT + cfg_domo[sid] + '&nvalue=1' + '&svalue=' + event[-1:] + '0')
     else:
         status_data = rest(GET, URL_HEALTH)
         rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()] + '&nvalue=' +
