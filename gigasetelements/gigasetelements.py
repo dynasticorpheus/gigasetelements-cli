@@ -17,7 +17,6 @@ import logging
 
 try:
     from colorama import init, Fore
-    from pushbullet import PushBullet, InvalidKeyError, PushbulletError
     import requests
     import unidecode
 except ImportError as error:
@@ -442,6 +441,7 @@ def remove_cron():
 
 def pb_message(pbmsg):
     """Send message using pushbullet module."""
+    from pushbullet import PushBullet, InvalidKeyError, PushbulletError
     if args.notify is not None and args.quiet is not True:
         try:
             pushb = PushBullet(args.notify)
