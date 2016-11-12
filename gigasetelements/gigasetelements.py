@@ -442,16 +442,15 @@ def remove_cron():
 def pb_message(pbmsg):
     """Send message using pushbullet module."""
     from pushbullet import PushBullet, InvalidKeyError, PushbulletError
-    if args.notify is not None and args.quiet is not True:
-        try:
-            pushb = PushBullet(args.notify)
-        except InvalidKeyError:
-            log('Notification'.ljust(17) + ' | ' + color('token'.ljust(8)) + ' | ')
-        except PushbulletError:
-            log('Notification'.ljust(17) + ' | ' + color('error'.ljust(8)) + ' | ')
-        else:
-            pushb.push_note('Gigaset Elements', pbmsg)
-            log('Notification'.ljust(17) + ' | ' + color('pushed'.ljust(8)) + ' | ')
+    try:
+        pushb = PushBullet(args.notify)
+    except InvalidKeyError:
+        log('Notification'.ljust(17) + ' | ' + color('token'.ljust(8)) + ' | ')
+    except PushbulletError:
+        log('Notification'.ljust(17) + ' | ' + color('error'.ljust(8)) + ' | ')
+    else:
+        pushb.push_note('Gigaset Elements', pbmsg)
+        log('Notification'.ljust(17) + ' | ' + color('pushed'.ljust(8)) + ' | ')
     return
 
 
@@ -736,7 +735,7 @@ def base():
         if args.plug:
             plug(basestation_data, sensor_exist, sensor_id)
 
-        if pb_body is not None:
+        if not args.quiet and None not in (args.notify, pb_body):
             pb_message(pb_body)
 
         if args.events is None and args.date is None:
