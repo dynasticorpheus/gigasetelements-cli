@@ -17,7 +17,6 @@ import logging
 
 try:
     from colorama import init, Fore
-    from pushbullet import PushBullet, InvalidKeyError, PushbulletError
     import requests
     import unidecode
 except ImportError as error:
@@ -32,7 +31,7 @@ if os.name == 'posix':
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.5.0b1'
+_VERSION_ = '1.5.0b2'
 
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
@@ -442,16 +441,16 @@ def remove_cron():
 
 def pb_message(pbmsg):
     """Send message using pushbullet module."""
-    if args.notify is not None and args.quiet is not True:
-        try:
-            pushb = PushBullet(args.notify)
-        except InvalidKeyError:
-            log('Notification'.ljust(17) + ' | ' + color('token'.ljust(8)) + ' | ')
-        except PushbulletError:
-            log('Notification'.ljust(17) + ' | ' + color('error'.ljust(8)) + ' | ')
-        else:
-            pushb.push_note('Gigaset Elements', pbmsg)
-            log('Notification'.ljust(17) + ' | ' + color('pushed'.ljust(8)) + ' | ')
+    from pushbullet import PushBullet, InvalidKeyError, PushbulletError
+    try:
+        pushb = PushBullet(args.notify)
+    except InvalidKeyError:
+        log('Notification'.ljust(17) + ' | ' + color('token'.ljust(8)) + ' | ')
+    except PushbulletError:
+        log('Notification'.ljust(17) + ' | ' + color('error'.ljust(8)) + ' | ')
+    else:
+        pushb.push_note('Gigaset Elements', pbmsg)
+        log('Notification'.ljust(17) + ' | ' + color('pushed'.ljust(8)) + ' | ')
     return
 
 
@@ -536,12 +535,14 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
 
 def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
     """Push events to domoticz server."""
-    if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
+    if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion']:
         if event in ['close', 'sirenoff', 'off']:
             cmd = 'off'
         else:
             cmd = 'on'
         rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + cfg_domo[sid])
+    elif event in ['button1', 'button2', 'button3', 'button4']:
+        rest(GET, url_domo + URL_ALERT + cfg_domo[sid] + '&nvalue=1' + '&svalue=' + event[-1:] + '0')
     else:
         status_data = rest(GET, URL_HEALTH)
         rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()] + '&nvalue=' +
@@ -734,7 +735,7 @@ def base():
         if args.plug:
             plug(basestation_data, sensor_exist, sensor_id)
 
-        if pb_body is not None:
+        if not args.quiet and None not in (args.notify, pb_body):
             pb_message(pb_body)
 
         if args.events is None and args.date is None:
