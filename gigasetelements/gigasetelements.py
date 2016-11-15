@@ -33,7 +33,8 @@ if os.name == 'posix':
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.5.0b3'
 
-LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4'}
+LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',
+         'custom': '20', 'away': '30'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
 AUTH_EXPIRE = 14400
 
@@ -487,22 +488,35 @@ def list_events():
 
 def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
     """List events realtime optionally filtered by type."""
+    health = ''
+    modus = ''
+    epoch = time.time() - 60
     if args.filter is None:
         url_monitor = URL_EVENTS + '?limit=10'
     else:
         url_monitor = URL_EVENTS + '?limit=10&group=' + args.filter
     if args.monitor > 1:
         mode = 'Domoticz mode'
-        print
         rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
-        domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(), basestation_data[0]
-                 ['friendly_name'].lower(), basestation_data, url_domo, cfg_domo)
     else:
         mode = 'Monitor mode'
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
     from_ts = str(int(time.time()) * 1000)
+    print '\n'
     try:
         while 1:
+            if args.monitor > 1 and time.time() - epoch > 59:
+                status_data = rest(GET, URL_HEALTH)
+                if health != status_data['system_health'].lower():
+                    domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(),
+                             basestation_data[0]['friendly_name'].lower(), basestation_data, url_domo, cfg_domo)
+                    health = status_data['system_health'].lower()
+                basestation_data = rest(GET, URL_BASE)
+                if modus != basestation_data[0]['intrusion_settings']['active_mode']:
+                    domoticz(basestation_data[0]['intrusion_settings']['active_mode'].lower(), basestation_data[0]['id'].lower(),
+                             basestation_data[0]['friendly_name'].lower(), basestation_data, url_domo, cfg_domo)
+                    modus = basestation_data[0]['intrusion_settings']['active_mode']
+                epoch = time.time()
             lastevents = rest(GET, url_monitor + '&from_ts=' + from_ts)
             for item in reversed(lastevents['events']):
                 try:
@@ -543,9 +557,11 @@ def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
         rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + cfg_domo[sid])
     elif event in ['button1', 'button2', 'button3', 'button4']:
         rest(GET, url_domo + URL_ALERT + cfg_domo[sid] + '&nvalue=1' + '&svalue=' + event[-1:] + '0')
+    elif event in ['home', 'custom', 'away']:
+        rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()].split(',')[1] + '&nvalue=1' + '&svalue=' + LEVEL.get(event))
     else:
         status_data = rest(GET, URL_HEALTH)
-        rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()] + '&nvalue=' +
+        rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()].split(',')[0] + '&nvalue=' +
              LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
     sys.stdout.write('\033[F')
     sys.stdout.write('\033[K')
