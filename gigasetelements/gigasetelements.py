@@ -214,8 +214,6 @@ def configure():
                 url_domo = 'http://' + authstring + dconfig['ip'] + ':' + dconfig['port']
             except Exception:
                 log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Domoticz setting(s) incorrect and/or missing', 3, 1)
-
-                # MarkO: We want to check later if there was or was not a succesful domoticz configuration
                 url_domo = False
         log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
         if args.username is None:
@@ -552,8 +550,6 @@ def monitor():
 def domoticz(event, sid, friendly):
     """Push events to domoticz server."""
     global status_data
-
-    # MarkO: Only run domoticz commands if there is an actual domoticz configuration
     if url_domo:
         if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
             if event in ['close', 'sirenoff', 'off']:
