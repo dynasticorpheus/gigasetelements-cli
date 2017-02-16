@@ -149,6 +149,7 @@ A lot of time & effort goes into making gigasetelements-cli so if you like it yo
 * *Orkun S*
 * *Adrian R*
 * *Joshua T*
+* *Auke C*
 
 License
 -------
