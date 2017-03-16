@@ -150,6 +150,7 @@ A lot of time & effort goes into making gigasetelements-cli so if you like it yo
 * *Adrian R*
 * *Joshua T*
 * *Auke C*
+* *RPC B*
 
 License
 -------
