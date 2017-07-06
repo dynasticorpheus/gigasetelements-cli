@@ -214,6 +214,7 @@ def configure():
                 url_domo = 'http://' + authstring + dconfig['ip'] + ':' + dconfig['port']
             except Exception:
                 log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Domoticz setting(s) incorrect and/or missing', 3, 1)
+                url_domo = False
         log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
         if args.username is None:
             args.username = config.get('accounts', 'username')
@@ -549,18 +550,19 @@ def monitor():
 def domoticz(event, sid, friendly):
     """Push events to domoticz server."""
     global status_data
-    if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
-        if event in ['close', 'sirenoff', 'off']:
-            cmd = 'off'
+    if url_domo:
+        if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion', 'button1', 'button2', 'button3', 'button4']:
+            if event in ['close', 'sirenoff', 'off']:
+                cmd = 'off'
+            else:
+                cmd = 'on'
+            restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[sid])
         else:
-            cmd = 'on'
-        restget(url_domo + URL_SWITCH + cmd.title() + '&idx=' + dconfig[sid])
-    else:
-        status_data = restget(URL_HEALTH)
-        restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
-                LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
-    sys.stdout.write("\033[F")
-    sys.stdout.write("\033[K")
+            status_data = restget(URL_HEALTH)
+            restget(url_domo + URL_ALERT + dconfig[basestation_data[0]['id'].lower()] + '&nvalue=' +
+                    LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
+        sys.stdout.write("\033[F")
+        sys.stdout.write("\033[K")
     return
 
 
