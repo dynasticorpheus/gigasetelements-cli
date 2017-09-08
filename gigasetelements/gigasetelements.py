@@ -34,7 +34,7 @@ _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.5.0b3'
 
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',
-         'custom': '20', 'away': '30'}
+         'custom': '20', 'away': '30', 'night': '40'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
 AUTH_EXPIRE = 14400
 
@@ -63,7 +63,7 @@ parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (require
 parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=(
     'door', 'window', 'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera', 'phone', 'smoke'))
-parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom'))
+parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom', 'night'))
 parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
 parser.add_argument('-D', '--daemon', help='daemonize during monitor/domoticz mode', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
@@ -363,7 +363,7 @@ def siren(basestation_data, sensor_exist):
     """Dis(arm) siren."""
     if not sensor_exist['indoor_siren']:
         log('Siren'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
-    moduslist = ['home', 'away', 'custom']
+    moduslist = ['home', 'away', 'custom', 'night']
     if args.siren == 'disarm':
         for modus in moduslist:
             switch = {"intrusion_settings": {"modes": [{modus: {"sirens_on": False}}]}}
@@ -557,7 +557,7 @@ def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
         rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + cfg_domo[sid])
     elif event in ['button1', 'button2', 'button3', 'button4']:
         rest(GET, url_domo + URL_ALERT + cfg_domo[sid] + '&nvalue=1' + '&svalue=' + event[-1:] + '0')
-    elif event in ['home', 'custom', 'away']:
+    elif event in ['home', 'custom', 'away', 'night']:
         rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()].split(',')[1] + '&nvalue=1' + '&svalue=' + LEVEL.get(event))
     else:
         status_data = rest(GET, URL_HEALTH)

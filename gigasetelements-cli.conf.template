@@ -65,7 +65,7 @@ password=
 # [02] Add hardware - dummy
 # [03] Create a virtual sensor - type [General, Alert] for basestation (health) (remember the idx number)
 # [04] Create a second virtual sensor - type [Light/Switch, Selector Switch] for basestation (modus) (remember the idx number)
-# [05] Set level 10 = Home, 20 = Custom, 30 = Away and enable option Hide Off level
+# [05] Set level 10 = Home, 20 = Custom, 30 = Away, 40 = Night and enable option Hide Off level
 # [06] Create a virtual sensor - type [Light/Switch, Switch] for each motion/door/window/siren/plug/camera (remember their idx numbers)
 # [07] Create a virtual sensor - type [Light/Switch, Selector Switch] for button (remember the idx number)
 # [08] Set level 10 = Short, 20 = Double, 30 = Long, 40 = Very long and enable option Hide Off level
