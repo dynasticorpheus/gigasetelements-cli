@@ -212,6 +212,7 @@ def configure():
                 url_domo = 'http://' + authstring + cfg_domo['ip'] + ':' + cfg_domo['port']
             except Exception:
                 log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Domoticz setting(s) incorrect and/or missing', 3, 1)
+                cfg_domo = False
         log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
         args.noupdate, credfromfile = load_option(args.noupdate, 'options', 'noupdate')
         args.silent, credfromfile = load_option(args.silent, 'options', 'silent')
@@ -495,11 +496,12 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
         url_monitor = URL_EVENTS + '?limit=10'
     else:
         url_monitor = URL_EVENTS + '?limit=10&group=' + args.filter
-    if args.monitor > 1:
+    if cfg_domo and args.monitor > 1:
         mode = 'Domoticz mode'
         rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
     else:
         mode = 'Monitor mode'
+        args.monitor = 1
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
     from_ts = str(int(time.time()) * 1000)
     print '\n'
