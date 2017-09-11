@@ -224,7 +224,7 @@ def configure():
         log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Username and/or password missing', 3, 1)
     if args.silent:
         try:
-            requests.packages.urllib3.disable_warnings()
+            requests.urllib3.disable_warnings()
         except Exception:
             pass
     return url_domo, cfg_domo, credfromfile
