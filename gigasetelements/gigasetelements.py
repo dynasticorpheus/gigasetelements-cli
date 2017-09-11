@@ -13,12 +13,10 @@ import datetime
 import argparse
 import json
 import logging
+import configparser
 
 from builtins import (dict, int, str, open)
 from future.moves.urllib.parse import urlparse
-
-import configparser
-
 
 try:
     from colorama import init, Fore
@@ -38,6 +36,7 @@ if os.name == 'posix':
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
 _VERSION_ = '1.5.0b4'
 
+LOGCL = {0: Fore.RESET, 1: Fore.GREEN, 2: Fore.YELLOW, 3: Fore.RED}
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',
          'custom': '20', 'away': '30', 'night': '40'}
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
@@ -128,17 +127,10 @@ def log(logme, rbg=0, exitnow=0, newline=1):
     if args.log is not None:
         logger = logging.getLogger(__name__)
         logger.info('[' + time.strftime('%c') + '] ' + logme)
-    if rbg == 1:
-        print(Fore.GREEN + '[-] ' + logme)
-    elif rbg == 2:
-        print(Fore.YELLOW + '[-] ' + logme)
-    elif rbg == 3:
-        print(Fore.RED + '[-] ' + logme)
+    if newline == 1:
+        print(LOGCL[rbg] + '[-] ' + logme)
     else:
-        if newline == 1:
-            print('[-] ' + logme)
-        else:
-            print('[-] ' + logme, end=' ')
+        print(LOGCL[rbg] + '[-] ' + logme, end=' ')
     if exitnow == 1 and args.restart:
         print()
         restart_program()
