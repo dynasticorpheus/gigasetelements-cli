@@ -15,7 +15,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(HERE, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-packagelist = ['requests', 'pushbullet.py', 'unidecode', 'colorama']
+packagelist = ['future', 'requests', 'pushbullet.py', 'unidecode', 'colorama', 'configparser']
 
 if os.name == 'posix':
     packagelist.append('python-crontab')
@@ -23,7 +23,7 @@ if os.name == 'posix':
 
 setup(
     name='gigasetelements-cli',
-    version='1.5.0b3',
+    version='1.5.0b4',
     description='gigasetelements-cli allows you to control your \
     Gigaset Elements home security system from the command line.',
     long_description=long_description,
@@ -37,8 +37,13 @@ setup(
         'Intended Audience :: End Users/Desktop',
         'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
-        'Programming Language :: Python :: 2',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6'
     ],
 
     keywords='Home Automation, Home Security, Internet of Things (IoT)',

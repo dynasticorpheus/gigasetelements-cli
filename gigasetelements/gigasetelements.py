@@ -4,16 +4,21 @@
 
 """Main code for gigasetelements command-line interface."""
 
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 
 import os
 import sys
 import time
 import datetime
-import urlparse
 import argparse
 import json
-import ConfigParser
 import logging
+
+from builtins import (dict, int, str, open)
+from future.moves.urllib.parse import urlparse
+
+import configparser
+
 
 try:
     from colorama import init, Fore
@@ -31,7 +36,7 @@ if os.name == 'posix':
 
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.5.0b3'
+_VERSION_ = '1.5.0b4'
 
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',
          'custom': '20', 'away': '30', 'night': '40'}
@@ -86,7 +91,7 @@ parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
 args = parser.parse_args()
-config = ConfigParser.ConfigParser(defaults=OPTDEF)
+config = configparser.ConfigParser(defaults=OPTDEF)
 init(autoreset=True)
 
 if os.name == 'nt':
@@ -116,27 +121,29 @@ def restart_program():
 
 def log(logme, rbg=0, exitnow=0, newline=1):
     """Print output in selected color and provide program exit on critical error."""
-    if os.name == 'nt':
-        logme = unidecode.unidecode(unicode(logme))
+    if sys.version_info[0] < 3:
+        logme = unicode(logme)
+    if os.name == 'nt' or args.log is not None:
+        logme = unidecode.unidecode(logme)
     if args.log is not None:
         logger = logging.getLogger(__name__)
-        logger.info('[' + time.strftime('%c') + '] ' + unidecode.unidecode(unicode(logme)))
+        logger.info('[' + time.strftime('%c') + '] ' + logme)
     if rbg == 1:
-        print Fore.GREEN + '[-] ' + logme.encode('utf-8')
+        print(Fore.GREEN + '[-] ' + logme)
     elif rbg == 2:
-        print Fore.YELLOW + '[-] ' + logme.encode('utf-8')
+        print(Fore.YELLOW + '[-] ' + logme)
     elif rbg == 3:
-        print Fore.RED + '[-] ' + logme.encode('utf-8')
+        print(Fore.RED + '[-] ' + logme)
     else:
         if newline == 1:
-            print '[-] ' + logme.encode('utf-8')
+            print('[-] ' + logme)
         else:
-            print '[-] ' + logme.encode('utf-8'),
+            print('[-] ' + logme, end=' ')
     if exitnow == 1 and args.restart:
-        print
+        print()
         restart_program()
     if exitnow == 1:
-        print
+        print()
         sys.exit()
     return
 
@@ -253,7 +260,7 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
     if request is not None:
         if not silent:
             if request.status_code != requests.codes.ok:  # pylint: disable=no-member
-                urlsplit = urlparse.urlparse(request.url)
+                urlsplit = urlparse(request.url)
                 log('HTTP ERROR'.ljust(17) + ' | ' + str(request.status_code).ljust(8) + ' | ' + request.reason + ' ' + str(urlsplit.path), 3, end)
         try:
             data = request.json()
@@ -346,17 +353,12 @@ def modus_switch(basestation_data, status_data):
 
 def set_delay(basestation_data):
     """Set alarm trigger delay."""
-    linfo = ''
-    delay = str(args.delay * 1000)
-    if args.delay > 0:
-        sinfo = 'delayed'
-        linfo = str(args.delay) + ' seconds'
-    else:
-        sinfo = 'normal'
-        linfo = 'No delay'
-    switch = {"intrusion_settings": {"modes": [{"away": {"trigger_delay": delay}}]}}
+    switch = {"intrusion_settings": {"modes": [{"away": {"trigger_delay": str(args.delay * 1000)}}]}}
     rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Alarm timer'.ljust(17) + ' | ' + color((sinfo).ljust(8)) + ' | ' + linfo)
+    if args.delay > 0:
+        log('Alarm timer'.ljust(17) + ' | ' + color(('delayed').ljust(8)) + ' | ' + str(args.delay) + ' seconds')
+    else:
+        log('Alarm timer'.ljust(17) + ' | ' + color(('normal').ljust(8)) + ' | ' + 'No delay')
     return
 
 
@@ -504,7 +506,7 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
         args.monitor = 1
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
     from_ts = str(int(time.time()) * 1000)
-    print '\n'
+    print('\n')
     try:
         while 1:
             if args.monitor > 1 and time.time() - epoch > 59:
@@ -578,14 +580,14 @@ def sensor(basestation_data):
         try:
             log(item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']), 0, 0, 0)
             if item['type'] not in ['is01', 'sp01']:
-                print '| battery ' + color(item['battery']['state']),
+                print('| battery ' + color(item['battery']['state']), end=' ')
             if item['type'] in ['ds02', 'ds01']:
-                print '| position ' + color(item['position_status']),
+                print('| position ' + color(item['position_status']), end=' ')
             if args.sensor > 1:
-                print '| ' + item['id'].upper(),
-            print
+                print('| ' + item['id'].upper(), end=' ')
+            print()
         except KeyError:
-            print
+            print()
             continue
     return
 
@@ -610,10 +612,10 @@ def notifications():
     channels = rest(GET, URL_CHANNEL)
     for item in channels.get('gcm', ''):
         try:
-            print('[-] ' + item['friendlyName'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' |'),
+            print(('[-] ' + item['friendlyName'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' |'), end=' ')
             for item2 in item['notificationGroups']:
-                print item2,
-            print
+                print(item2, end=' ')
+            print()
         except KeyError:
             continue
     return
@@ -624,15 +626,16 @@ def camera_info(camera_data, sensor_exist):
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     try:
-        print '[-] ' + camera_data[0]['friendly_name'].ljust(
-            17) + ' | ' + color(camera_data[0]['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']),
-        print('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' +
-              color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])),
-        print('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' + color(camera_data[0]['settings']['connection'])),
+        print('[-] ' + camera_data[0]['friendly_name'].ljust(
+            17) + ' | ' + color(camera_data[0]['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']), end=' ')
+        print(('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' +
+               color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])), end=' ')
+        print(('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' +
+               color(camera_data[0]['settings']['connection'])), end=' ')
         if camera_data[0]['settings']['connection'] == 'wifi':
-            print '| ssid ' + Fore.GREEN + str(camera_data[0]['wifi_ssid']).upper()
+            print('| ssid ' + Fore.GREEN + str(camera_data[0]['wifi_ssid']).upper())
     except KeyError:
-        print
+        print()
     stream_data = rest(GET, URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
     for stream in ('m3u8', 'rtmp', 'rtsp'):
         log('Camera stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
@@ -674,8 +677,8 @@ def start_logger(logfile):
     try:
         filehandle = logging.FileHandler(logfile, 'a')
     except IOError:
-        print Fore.RED + '[-] Unable to write log file ' + logfile
-        print
+        print(Fore.RED + '[-] Unable to write log file ' + logfile)
+        print()
         sys.exit()
     filehandle.setLevel(logging.INFO)
     logger.addHandler(filehandle)
@@ -686,9 +689,7 @@ def start_logger(logfile):
 def base():
     """Base program."""
     pb_body = None
-    print
-    print 'Gigaset Elements - Command-line Interface v' + _VERSION_
-    print
+    print('\n' + 'Gigaset Elements - Command-line Interface v' + _VERSION_ + '\n')
     try:
         if args.log:
             start_logger(args.log)
@@ -700,12 +701,12 @@ def base():
 
         if args.cronjob is not None:
             add_cron(credfromfile)
-            print
+            print()
             sys.exit()
 
         if args.remove and args.cronjob is None:
             remove_cron()
-            print
+            print()
             sys.exit()
 
         check_version()
@@ -725,7 +726,7 @@ def base():
         if args.sensor:
             sensor(basestation_data)
             if status_data['status_msg_id'] == '':
-                status_data['status_msg_id'] = u'\u2713'
+                status_data['status_msg_id'] = '\u2713'
             pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
                 ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
 
@@ -764,7 +765,7 @@ def base():
         if args.monitor:
             monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo)
 
-        print
+        print()
 
     except KeyboardInterrupt:
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
@@ -773,7 +774,7 @@ def base():
 def main():
     """Main program."""
     if args.daemon and os.name != 'nt':
-        print
+        print()
         if filewritable('PID file', args.pid):
             daemon = Daemonize(app='gigasetelements-cli', pid=args.pid, action=base, auto_close_fds=False, chdir=os.path.dirname(os.path.abspath(sys.argv[0])))
             daemon.start()
