@@ -136,9 +136,9 @@ Notes
 Been ages since I have coded and python is new for me so in other words be kind :)
 
 
-Donate
+Donation Hall of Fame
 ------
-A lot of time & effort goes into making gigasetelements-cli so if you like it you might want to consider buying me a beer :)
+A lot of time & effort goes into making gigasetelements-cli so if you like it you might want to consider buying me a :beer: :)
 
 .. image:: http://www.paypal.com/en_US/i/btn/x-click-but04.gif
     :target: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=FETZ23LK5UH2J&item_number=gigasetelements%2dcli&currency_code=EUR
@@ -151,6 +151,7 @@ A lot of time & effort goes into making gigasetelements-cli so if you like it yo
 * *Joshua T*
 * *Auke C*
 * *RPC B*
+* *Silke H*
 
 License
 -------
