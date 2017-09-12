@@ -17,6 +17,7 @@ import configparser
 
 from builtins import (dict, int, str, open)
 from future.moves.urllib.parse import urlparse
+from requests.packages.urllib3 import disable_warnings
 
 try:
     from colorama import init, Fore
@@ -224,7 +225,7 @@ def configure():
         log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Username and/or password missing', 3, 1)
     if args.silent:
         try:
-            requests.urllib3.disable_warnings()
+            disable_warnings()
         except Exception:
             pass
     return url_domo, cfg_domo, credfromfile
