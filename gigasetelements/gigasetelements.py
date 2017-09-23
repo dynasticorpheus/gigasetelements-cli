@@ -17,10 +17,10 @@ import configparser
 
 from builtins import (dict, int, str, open)
 from future.moves.urllib.parse import urlparse
-from requests.packages.urllib3 import disable_warnings
 
 try:
     from colorama import init, Fore
+    from requests.packages.urllib3 import disable_warnings
     import requests
     import unidecode
 except ImportError as error:
@@ -95,8 +95,7 @@ config = configparser.ConfigParser(defaults=OPTDEF)
 init(autoreset=True)
 
 if os.name == 'nt':
-    args.cronjob = None
-    args.remove = False
+    args.cronjob, args.remove = None, False
     NTCONFIG = os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))
 else:
     NTCONFIG = ''
@@ -119,7 +118,7 @@ def restart_program():
     return
 
 
-def log(logme, rbg=0, exitnow=0, newline=1):
+def log(logme, rbg=0, exitnow=0, newline=None):
     """Print output in selected color and provide program exit on critical error."""
     if sys.version_info[0] < 3:
         logme = unicode(logme)
@@ -128,15 +127,13 @@ def log(logme, rbg=0, exitnow=0, newline=1):
     if args.log is not None:
         logger = logging.getLogger(__name__)
         logger.info('[' + time.strftime('%c') + '] ' + logme)
-    if newline == 1:
-        print(LOGCL[rbg] + '[-] ' + logme)
-    else:
-        print(LOGCL[rbg] + '[-] ' + logme, end=' ')
-    if exitnow == 1 and args.restart:
-        print()
-        restart_program()
+    if newline is not None:
+        newline = ' '
+    print(LOGCL[rbg] + '[-] ' + logme, end=newline)
     if exitnow == 1:
         print()
+        if args.restart:
+            restart_program()
         sys.exit()
     return
 
@@ -181,8 +178,7 @@ def load_option(arg, section, option):
             fromfile = True
     elif isinstance(arg, bool):
         if config.getboolean(section, option):
-            arg = True
-            fromfile = True
+            arg = fromfile = True
     return arg, fromfile
 
 
@@ -226,7 +222,7 @@ def configure():
     if args.silent:
         try:
             disable_warnings()
-        except Exception:
+        except NameError:
             pass
     return url_domo, cfg_domo, credfromfile
 
@@ -463,7 +459,7 @@ def list_events():
         try:
             from_ts = str(int(time.mktime(time.strptime(args.date[0], '%d/%m/%Y'))) * 1000)
             to_ts = str(int(time.mktime(time.strptime(args.date[1], '%d/%m/%Y'))) * 1000)
-        except Exception:
+        except ValueError:
             log('Event(s)'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | ' + 'Date(s) filter not in DD/MM/YYYY format', 3, 1)
     if args.filter is None and args.date is not None:
         log('Event(s)'.ljust(17) + ' | ' + 'DATE'.ljust(8) + ' | ' + args.date[0] + ' - ' + args.date[1])
@@ -484,8 +480,7 @@ def list_events():
 
 def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
     """List events realtime optionally filtered by type."""
-    health = ''
-    modus = ''
+    health = modus = ''
     epoch = time.time() - 60
     if args.filter is None:
         url_monitor = URL_EVENTS + '?limit=10'
