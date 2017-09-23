@@ -619,19 +619,18 @@ def camera_info(camera_data, sensor_exist):
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     try:
-        print('[-] ' + camera_data[0]['friendly_name'].ljust(
-            17) + ' | ' + color(camera_data[0]['status'].ljust(8)) + ' | firmware ' + color(camera_data[0]['firmware_status']), end=' ')
-        print(('| quality ' + color(camera_data[0]['settings']['quality']) + ' | nightmode ' +
-               color(camera_data[0]['settings']['nightmode']) + ' | mic ' + color(camera_data[0]['settings']['mic'])), end=' ')
-        print(('| motion detection ' + color(camera_data[0]['motion_detection']['status']) + ' | connection ' +
-               color(camera_data[0]['settings']['connection'])), end=' ')
-        if camera_data[0]['settings']['connection'] == 'wifi':
-            print('| ssid ' + Fore.GREEN + str(camera_data[0]['wifi_ssid']).upper())
+        for cam in camera_data:
+            print('[-] ' + cam['friendly_name'].ljust(17) + ' | ' + color(cam['status'].ljust(8)) + ' | firmware ' + color(cam['firmware_status']), end=' ')
+            print(('| quality ' + color(cam['settings']['quality']) + ' | nightmode ' + color(cam['settings']['nightmode']) + ' | mic ' +
+                   color(cam['settings']['mic'])), end=' ')
+            print(('| motion detection ' + color(cam['motion_detection']['status']) + ' | connection ' + color(cam['settings']['connection'])), end=' ')
+            if cam['settings']['connection'] == 'wifi':
+                print('| ssid ' + Fore.GREEN + str(cam['wifi_ssid']).upper())
+            stream_data = rest(GET, URL_CAMERA + '/' + cam['id'] + '/liveview/start')
+            for stream in ('m3u8', 'rtmp', 'rtsp'):
+                log('Camera stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
     except KeyError:
         print()
-    stream_data = rest(GET, URL_CAMERA + '/' + camera_data[0]['id'] + '/liveview/start')
-    for stream in ('m3u8', 'rtmp', 'rtsp'):
-        log('Camera stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
     return
 
 
