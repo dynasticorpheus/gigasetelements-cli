@@ -78,7 +78,7 @@ parser.add_argument('-P', '--pid', help='fully qualified name of pid file', defa
 parser.add_argument('-s', '--sensor', help='''show sensor status (use -ss to include sensor id's)''', action='count', default=0, required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
-parser.add_argument('-a', '--camera', help='show camera status', action='store_true', required=False)
+parser.add_argument('-a', '--stream', help='start camera cloud based streams', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
 parser.add_argument('-A', '--snapshot', help='download camera snapshot', action='store_true', required=False)
 parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
@@ -560,7 +560,7 @@ def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
     return
 
 
-def sensor(basestation_data):
+def sensor(basestation_data, sensor_exist, camera_data):
     """Show sensor details and current state."""
     log(basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]
                                                                        ['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status']))
@@ -577,6 +577,20 @@ def sensor(basestation_data):
         except KeyError:
             print()
             continue
+    if sensor_exist['camera']:
+        try:
+            for cam in camera_data:
+                print('[-] ' + cam['friendly_name'].ljust(17) + ' | ' + color(cam['status'].ljust(8)) + ' | firmware ' + color(cam['firmware_status']), end=' ')
+                print(('| quality ' + color(cam['settings']['quality']) + ' | nightmode ' + color(cam['settings']['nightmode']) + ' | mic ' +
+                       color(cam['settings']['mic'])), end=' ')
+                print(('| motion detection ' + color(cam['motion_detection']['status']) + ' | connection ' + color(cam['settings']['connection'])), end=' ')
+                if cam['settings']['connection'] == 'wifi':
+                    print('| ssid ' + Fore.GREEN + str(cam['wifi_ssid']).upper(), end=' ')
+                if args.sensor > 1:
+                    print('| ' + cam['id'].upper(), end=' ')
+                print()
+        except KeyError:
+            print()
     return
 
 
@@ -609,21 +623,15 @@ def notifications():
     return
 
 
-def camera_info(camera_data, sensor_exist):
+def camera_stream(camera_data, sensor_exist):
     """Show camera details and current state."""
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     try:
         for cam in camera_data:
-            print('[-] ' + cam['friendly_name'].ljust(17) + ' | ' + color(cam['status'].ljust(8)) + ' | firmware ' + color(cam['firmware_status']), end=' ')
-            print(('| quality ' + color(cam['settings']['quality']) + ' | nightmode ' + color(cam['settings']['nightmode']) + ' | mic ' +
-                   color(cam['settings']['mic'])), end=' ')
-            print(('| motion detection ' + color(cam['motion_detection']['status']) + ' | connection ' + color(cam['settings']['connection'])), end=' ')
-            if cam['settings']['connection'] == 'wifi':
-                print('| ssid ' + Fore.GREEN + str(cam['wifi_ssid']).upper())
             stream_data = rest(GET, URL_CAMERA + '/' + cam['id'] + '/liveview/start')
             for stream in ('m3u8', 'rtmp', 'rtsp'):
-                log('Camera stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
+                log(cam['friendly_name'].ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
     except KeyError:
         print()
     return
@@ -711,7 +719,7 @@ def base():
                     basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
 
         if args.sensor:
-            sensor(basestation_data)
+            sensor(basestation_data, sensor_exist, camera_data)
             if status_data['status_msg_id'] == '':
                 status_data['status_msg_id'] = '\u2713'
             pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
@@ -720,8 +728,8 @@ def base():
         if args.delay is not None:
             set_delay(basestation_data)
 
-        if args.camera:
-            camera_info(camera_data, sensor_exist)
+        if args.stream:
+            camera_stream(camera_data, sensor_exist)
 
         if args.record:
             record(camera_data, sensor_exist)
