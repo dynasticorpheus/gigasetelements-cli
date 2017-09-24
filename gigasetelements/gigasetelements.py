@@ -67,7 +67,7 @@ parser.add_argument('-d', '--date', help='filter events on begin date - end date
 parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
 parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=(
-    'door', 'window', 'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera', 'phone', 'smoke'))
+    'door', 'window', 'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera', 'phone', 'smoke', 'umos'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom', 'night'))
 parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
 parser.add_argument('-D', '--daemon', help='daemonize during monitor/domoticz mode', action='store_true', required=False)
@@ -304,7 +304,7 @@ def check_version():
 def collect_hw(basestation_data, camera_data):
     """Retrieve sensor list and details."""
     sensor_id = {}
-    sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug', 'smoke'], False)
+    sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug', 'smoke', 'umos'], False)
     for item in basestation_data[0]['sensors']:
         sensor_id.setdefault(item['type'], []).append(item['id'])
     try:
@@ -322,6 +322,8 @@ def collect_hw(basestation_data, camera_data):
         sensor_exist.update(dict.fromkeys(['camera'], True))
     if 'sd01' in sensor_id:
         sensor_exist.update(dict.fromkeys(['smoke'], True))
+    if 'um01' in sensor_id:
+        sensor_exist.update(dict.fromkeys(['umos'], True))
     if 'ws02' in sensor_id:
         sensor_exist.update(dict.fromkeys(['window_sensor'], True))
     if 'ps01' in sensor_id or 'ps02' in sensor_id:
