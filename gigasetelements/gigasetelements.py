@@ -78,6 +78,7 @@ parser.add_argument('-P', '--pid', help='fully qualified name of pid file', defa
 parser.add_argument('-s', '--sensor', help='''show sensor status (use -ss to include sensor id's)''', action='count', default=0, required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
+parser.add_argument('-y', '--privacy', help='switch privacy mode on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-a', '--stream', help='start camera cloud based streams', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
 parser.add_argument('-A', '--snapshot', help='download camera snapshot', action='store_true', required=False)
@@ -351,6 +352,13 @@ def set_delay(basestation_data):
     else:
         log('Alarm timer'.ljust(17) + ' | ' + color(('normal').ljust(8)) + ' | ' + 'No delay')
     return
+
+
+def set_privacy(basestation_data):
+    """Set privacy mode."""
+    switch = {"intrusion_settings": {"modes": [{"home": {"privacy_mode": str(args.privacy in "on").lower()}}]}}
+    rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+    log('Privacy mode'.ljust(17) + ' | ' + color(args.privacy.ljust(8)) + ' | ')
 
 
 def siren(basestation_data, sensor_exist):
@@ -729,6 +737,9 @@ def base():
 
         if args.delay is not None:
             set_delay(basestation_data)
+
+        if args.privacy is not None:
+            set_privacy(basestation_data)
 
         if args.stream:
             camera_stream(camera_data, sensor_exist)
