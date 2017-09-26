@@ -356,9 +356,12 @@ def set_delay(basestation_data):
 
 def set_privacy(basestation_data):
     """Set privacy mode."""
-    switch = {"intrusion_settings": {"modes": [{"home": {"privacy_mode": str(args.privacy in "on").lower()}}]}}
-    rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+    moduslist = ['home', 'custom', 'night']
+    for modus in moduslist:
+        switch = {"intrusion_settings": {"modes": [{modus: {"privacy_mode": str(args.privacy in "on").lower()}}]}}
+        rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Privacy mode'.ljust(17) + ' | ' + color(args.privacy.ljust(8)) + ' | ')
+    return
 
 
 def siren(basestation_data, sensor_exist):
@@ -366,14 +369,9 @@ def siren(basestation_data, sensor_exist):
     if not sensor_exist['indoor_siren']:
         log('Siren'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     moduslist = ['home', 'away', 'custom', 'night']
-    if args.siren == 'disarm':
-        for modus in moduslist:
-            switch = {"intrusion_settings": {"modes": [{modus: {"sirens_on": False}}]}}
-            rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
-    else:
-        for modus in moduslist:
-            switch = {"intrusion_settings": {"modes": [{modus: {"sirens_on": True}}]}}
-            rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
+    for modus in moduslist:
+        switch = {"intrusion_settings": {"modes": [{modus: {"sirens_on": str(args.siren in "arm").lower()}}]}}
+        rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Siren'.ljust(17) + ' | ' + color((args.siren + 'ED').ljust(8)) + ' | ')
     return
 
