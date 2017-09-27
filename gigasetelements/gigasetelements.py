@@ -252,11 +252,14 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
             if request.status_code != requests.codes.ok:  # pylint: disable=no-member
                 urlsplit = urlparse(request.url)
                 log('HTTP ERROR'.ljust(17) + ' | ' + str(request.status_code).ljust(8) + ' | ' + request.reason + ' ' + str(urlsplit.path), 3, end)
-        try:
+        contenttype = request.headers.get('Content-Type', default='').split(';')[0]
+        if contenttype == 'application/json':
             data = request.json()
-        except ValueError:
+        elif contenttype == 'image/jpeg':
+            data = request.content
+        else:
             data = request.text
-        return data
+    return data
 
 
 def authenticate(reauthenticate=False):
@@ -666,9 +669,8 @@ def getsnapshot(camera_data, sensor_exist):
     image_name = 'snapshot_' + time.strftime('%y%m%d') + '_' + time.strftime('%H%M%S') + '.jpg'
     if filewritable('Snapshot image', image_name, 0):
         log('Camera snapshot'.ljust(17) + ' | ' + color('download'.ljust(8)) + ' | ' + image_name)
-        snapshot = s.get(URL_CAMERA + '/' + str(camera_data[0]['id']) + '/snapshot?fresh=true')
         with open(image_name, 'wb') as image:
-            image.write(snapshot.content)
+            image.write(rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/snapshot?fresh=true'))
     return
 
 
