@@ -1,6 +1,8 @@
 Gigaset Elements API command-line interface
 ===========================================
 
+|Version Status| |Downloads|
+
 gigasetelements-cli is a python based program which allows you to control your Gigaset Elements home security system.
 It comes with an easy to use CLI (command-line interface) suitable for direct use or cron jobs.
 
@@ -156,3 +158,8 @@ A lot of time & effort goes into making gigasetelements-cli so if you like it yo
 License
 -------
 GPL2
+
+.. |Version Status| image:: https://img.shields.io/pypi/v/gigasetelements-cli.svg
+   :target: https://pypi.python.org/pypi/gigasetelements-cli/
+.. |Downloads| image:: https://img.shields.io/pypi/dm/gigasetelements-cli.svg
+   :target: https://pypi.python.org/pypi/gigasetelements-cli/
