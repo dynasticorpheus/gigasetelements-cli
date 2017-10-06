@@ -43,6 +43,7 @@ LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1
 OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
 AUTH_EXPIRE = 14400
 
+URL_STATUS = 'https://status.gigaset-elements.de/api/v1/status'
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
 URL_EVENTS = 'https://api.gigaset-elements.de/api/v2/me/events'
@@ -246,14 +247,14 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
             request = method(url, timeout=timeout, headers=header, allow_redirects=True, verify=pem)
     except requests.exceptions.RequestException as error:
         if not silent:
-            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(error.message), 3, end)
+            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(error), 3, end)
     if request is not None:
         if not silent:
             if request.status_code != requests.codes.ok:  # pylint: disable=no-member
                 urlsplit = urlparse(request.url)
                 log('HTTP ERROR'.ljust(17) + ' | ' + str(request.status_code).ljust(8) + ' | ' + request.reason + ' ' + str(urlsplit.path), 3, end)
         contenttype = request.headers.get('Content-Type', default='').split(';')[0]
-        if contenttype == 'application/json':
+        if contenttype == 'application/json' or request.url == URL_STATUS:
             data = request.json()
         elif contenttype == 'image/jpeg':
             data = request.content
@@ -264,6 +265,9 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
 
 def authenticate(reauthenticate=False):
     """Gigaset Elements API authentication."""
+    status_maintenance = rest(GET, URL_STATUS)
+    if status_maintenance['isMaintenance']:
+        log('Maintenance'.ljust(17) + ' | ' + 'DETECTED'.ljust(8) + ' | Please try later', 2, 1)
     auth_time = time.time()
     auth_type = 'Re-authentication'
     payload = {'password': args.password, 'email': args.username}
