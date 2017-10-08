@@ -35,31 +35,29 @@ password=mybigsecret
 # set modus {home,away,custom} (optional)
 # modus=home
 
-# disable SSL/TLS certificate verification {true,false} (optional)
-# insecure=false
+# disable SSL/TLS certificate verification {yes,no} (optional)
+# insecure=no
 
-# suppress urllib3 warnings {true,false} (optional)
-# silent=false
+# suppress urllib3 warnings {yes,no} (optional)
+# silent=no
 
-# Don't periodically check PyPI to determine whether a new version of gigasetelements-cli is available for download {true,false} (optional)
-# noupdate= false
+# Don't periodically check PyPI to determine whether a new version of gigasetelements-cli is available for download {yes,no} (optional)
+# noupdate=no
 
 
 [domoticz]
 
-# domoticz server ip address (required)
-ip=127.0.0.1
+# http(s) server url including basic authentication credentials if applicable (required)
+# url=http://user:password@ip:port
+# url=http://ip:port
+# url=http://user:pwd@127.0.0.1:8080
+# url=http://127.0.0.1:8080
 
-# domoticz server port (required)
-port=8080
+# delimeted sensor / idx  pair list (required) (Note: base needs 2 (comma separated) idx values, see step 3 and 4 below)
+# sensorpairs=basesensorid:idx,idx;sensorid:idx;sensorid:idx
+# sensorpairs=F32A76C4DHJ1B743A0E0D74EFD2375D1:10,11;123FC4577H:12;7C2G30873SED:13
 
-# domoticz user name (optional)
-username=
-
-# domoticz password (optional)
-password=
-
-# domoticz idx sensor pairing (required)
+# Instructions
 
 # [01] Go to Domoticz GUI
 # [02] Add hardware - dummy
@@ -71,13 +69,3 @@ password=
 # [08] Set level 10 = Short, 20 = Double, 30 = Long, 40 = Very long and enable option Hide Off level
 # [09] Set Off Delay to 2 seconds for virtual sensors linked to motion, button or camera
 # [10] Run "gigasetelements-cli -ss" to get sensor ids and match them with the their respective idx in domoticz
-# [11] Run "gigasetelements-cli -a" to get camera sensor id. Use the 12 uppercase digits in stream url. This MAC address can also be found on the back of the camera.
-
-# example motion/door/window/siren/plug
-# 123FC4577H=99
-
-# example basestation id (alert idx,selector idx)
-# F32A76C4DHJ1B743A0E0D74EFD2375D1=98,96
-
-# example camera id
-# 7C2G30873SED=97
