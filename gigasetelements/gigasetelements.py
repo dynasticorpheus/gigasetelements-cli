@@ -10,10 +10,8 @@ import os
 import sys
 import time
 import datetime
-import argparse
 import json
 import logging
-import configparser
 
 from builtins import (dict, int, str, open)
 from future.moves.urllib.parse import urlparse
@@ -22,6 +20,7 @@ try:
     from colorama import init, Fore
     from requests.packages.urllib3 import disable_warnings
     import requests
+    import configargparse
     import unidecode
 except ImportError as error:
     sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
@@ -33,14 +32,26 @@ if os.name == 'posix':
     except ImportError as error:
         sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
 
+if any(arg in sys.argv for arg in ['-i', '--ignore']):
+    CONFPATH = []
+elif os.name == 'nt':
+    CONFPATH = [os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))]
+else:
+    CONFPATH = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
+                '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'),
+                os.path.expanduser('~/.config/gigasetelements-cli/gigasetelements-cli.conf'),
+                os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.5.0b4'
+_VERSION_ = '1.5.0b5'
 
 LOGCL = {0: Fore.RESET, 1: Fore.GREEN, 2: Fore.YELLOW, 3: Fore.RED}
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',
          'custom': '20', 'away': '30', 'night': '40'}
-OPTDEF = {'username': None, 'password': None, 'modus': None, 'pbtoken': None, 'silent': 'False', 'noupdate': 'False', 'insecure': 'False'}
+
+SENSOR_FRIENDLY = {'ws02': 'window_sensor', 'ps01': 'presence_sensor', 'ps02': 'presence_sensor', 'ds01': 'door_sensor', 'ds02': 'door_sensor',
+                   'is01': 'indoor_siren', 'sp01': 'smart_plug', 'bn01': 'button', 'yc01': 'camera', 'sd01': 'smoke', 'um01': 'umos'}
+
 AUTH_EXPIRE = 14400
 
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
@@ -57,10 +68,10 @@ URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
 URL_LOG = '/json.htm?type=command&param=addlogmessage&message='
 
-parser = argparse.ArgumentParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com')
-parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False)
-parser.add_argument('-u', '--username', help='username (email) in use with my.gigaset-elements.com', required=False)
-parser.add_argument('-p', '--password', help='password in use with my.gigaset-elements.com', required=False)
+parser = configargparse.ArgParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com', default_config_files=CONFPATH)
+parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False, is_config_file=True)
+parser.add_argument('-u', '--username', help='username (email) in use with my.gigaset-elements.com', required=True)
+parser.add_argument('-p', '--password', help='password in use with my.gigaset-elements.com', required=True)
 parser.add_argument('-n', '--notify', help='pushbullet token', required=False, metavar='TOKEN')
 parser.add_argument('-e', '--events', help='show last <number> of events', type=int, required=False)
 parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
@@ -89,25 +100,23 @@ parser.add_argument('-j', '--restart', help='automatically restart program in ca
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verification', action='store_true', required=False)
 parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='store_true', required=False)
+parser.add_argument('-U', '--url', help='url (domoticz)', required=False)
+parser.add_argument('-X', '--sensorpairs', help='idx keypairs (domoticz)', required=False, action='append')
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
 args = parser.parse_args()
-config = configparser.ConfigParser(defaults=OPTDEF)
 init(autoreset=True)
+s = requests.Session()
+s.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
+s.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
+POST, GET, HEAD = s.post, s.get, s.head
 
-if os.name == 'nt':
-    args.cronjob, args.remove = None, False
-    NTCONFIG = os.path.join(os.environ['APPDATA'], os.path.normpath('gigasetelements-cli/gigasetelements-cli.conf'))
-else:
-    NTCONFIG = ''
 
-if args.cronjob is None and args.remove is False:
-    s = requests.Session()
-    s.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
-    s.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
-    POST, GET, HEAD = s.post, s.get, s.head
-else:
-    args.noupdate = True
+if args.silent:
+    try:
+        disable_warnings()
+    except NameError:
+        pass
 
 
 def restart_program():
@@ -168,66 +177,6 @@ def color(txt):
     return txt
 
 
-def load_option(arg, section, option):
-    """Load options safely from conf file."""
-    fromfile = False
-    if arg is None:
-        arg = config.get(section, option)
-        if arg == '' or arg is None:
-            arg = None
-        else:
-            fromfile = True
-    elif isinstance(arg, bool):
-        if config.getboolean(section, option):
-            arg = fromfile = True
-    return arg, fromfile
-
-
-def configure():
-    """Load variables based on command line arguments and config file."""
-    cfg_domo, url_domo, credfromfile, authstring = None, None, False, ''
-    if args.config is None:
-        locations = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
-                     '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'), NTCONFIG,
-                     os.path.expanduser('~/.config/gigasetelements-cli/gigasetelements-cli.conf'), os.path.expanduser('~/.config/gigasetelements-cli.conf'),
-                     os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
-        for i in locations:
-            if os.path.exists(i):
-                args.config = i
-        if args.ignore:
-            args.config = None
-    else:
-        if not os.path.exists(args.config):
-            log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | File does not exist ' + args.config, 3, 1)
-    if args.config is not None:
-        config.read(args.config)
-        if args.monitor > 1:
-            try:
-                cfg_domo = dict(config.items('domoticz'))
-                if cfg_domo['username'] != '':
-                    authstring = cfg_domo['username'] + ':' + cfg_domo['password'] + '@'
-                url_domo = 'http://' + authstring + cfg_domo['ip'] + ':' + cfg_domo['port']
-            except Exception:
-                log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Domoticz setting(s) incorrect and/or missing', 3, 1)
-                cfg_domo = False
-        log('Configuration'.ljust(17) + ' | ' + color('loaded'.ljust(8)) + ' | ' + args.config)
-        args.noupdate, credfromfile = load_option(args.noupdate, 'options', 'noupdate')
-        args.silent, credfromfile = load_option(args.silent, 'options', 'silent')
-        args.insecure, credfromfile = load_option(args.insecure, 'options', 'insecure')
-        args.modus, credfromfile = load_option(args.modus, 'options', 'modus')
-        args.notify, credfromfile = load_option(args.notify, 'accounts', 'pbtoken')
-        args.username, credfromfile = load_option(args.username, 'accounts', 'username')
-        args.password, credfromfile = load_option(args.password, 'accounts', 'password')
-    if None in (args.username, args.password):
-        log('Configuration'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Username and/or password missing', 3, 1)
-    if args.silent:
-        try:
-            disable_warnings()
-        except NameError:
-            pass
-    return url_domo, cfg_domo, credfromfile
-
-
 def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=False):
     """REST interaction using requests module."""
     request = None
@@ -246,7 +195,7 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
             request = method(url, timeout=timeout, headers=header, allow_redirects=True, verify=pem)
     except requests.exceptions.RequestException as error:
         if not silent:
-            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(error.message), 3, end)
+            log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(error), 3, end)
     if request is not None:
         if not silent:
             if request.status_code != requests.codes.ok:  # pylint: disable=no-member
@@ -308,7 +257,7 @@ def check_version():
 def collect_hw(basestation_data, camera_data):
     """Retrieve sensor list and details."""
     sensor_id = {}
-    sensor_exist = dict.fromkeys(['button', 'camera', 'door_sensor', 'indoor_siren', 'presence_sensor', 'smart_plug', 'smoke', 'umos'], False)
+    sensor_exist = dict.fromkeys(list(SENSOR_FRIENDLY.values()), False)
     for item in basestation_data[0]['sensors']:
         sensor_id.setdefault(item['type'], []).append(item['id'])
     try:
@@ -316,24 +265,8 @@ def collect_hw(basestation_data, camera_data):
             sensor_id.update(dict.fromkeys(['yc01'], camera_data[0]['id']))
     except IndexError:
         pass
-    if 'is01' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['indoor_siren'], True))
-    if 'sp01' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['smart_plug'], True))
-    if 'bn01' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['button'], True))
-    if 'yc01' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['camera'], True))
-    if 'sd01' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['smoke'], True))
-    if 'um01' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['umos'], True))
-    if 'ws02' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['window_sensor'], True))
-    if 'ps01' in sensor_id or 'ps02' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['presence_sensor'], True))
-    if 'ds01' in sensor_id or 'ds02' in sensor_id:
-        sensor_exist.update(dict.fromkeys(['door_sensor'], True))
+    for item in sensor_id:
+        sensor_exist.update(dict.fromkeys([SENSOR_FRIENDLY[item]], True))
     return sensor_id, sensor_exist
 
 
@@ -398,19 +331,18 @@ def istimeformat(timestr):
         return False
 
 
-def add_cron(credfromfile):
+def add_cron():
     """Add job to crontab to set alarm modus."""
     if args.modus is None:
         log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Specify modus using -m option', 3, 1)
+    elif os.name == 'nt':
+        log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not supported on windows OS', 3, 1)
     if istimeformat(args.cronjob):
         cron = CronTab(user=True)
         now = datetime.datetime.now()
         timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
-        if credfromfile:
-            job = cron.new('gigasetelements-cli -m ' + args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
-        else:
-            job = cron.new('gigasetelements-cli -u ' + args.username + ' -p ' + args.password + ' -m ' +
-                           args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+        job = cron.new('gigasetelements-cli -u ' + args.username + ' -p ' + args.password + ' -m ' +
+                       args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
         job.month.on(datetime.datetime.now().strftime('%-m'))
         if now < timer:
             job.day.on(datetime.datetime.now().strftime('%-d'))
@@ -421,7 +353,7 @@ def add_cron(credfromfile):
         job.hour.on(time.strptime(args.cronjob, '%H:%M')[3])
         job.minute.on(time.strptime(args.cronjob, '%H:%M')[4])
         cron.write()
-        log('Cronjob'.ljust(17) + ' | ' + color(args.modus.ljust(8)) + ' | ' + 'Modus on ' + timer.strftime('%A %d %B %Y %H:%M'))
+        log('Cronjob'.ljust(17) + ' | ' + color(args.modus.ljust(8)) + ' | ' + 'Modus on ' + timer.strftime('%A %d %B %Y %H:%M'), 0, 1)
     else:
         log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Use valid time (00:00 - 23:59)', 3, 1)
     return
@@ -429,6 +361,8 @@ def add_cron(credfromfile):
 
 def remove_cron():
     """Remove all jobs from crontab setting alarm modus."""
+    if os.name == 'nt':
+        log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not supported on windows OS', 3, 1)
     cron = CronTab(user=True)
     existing = cron.find_command('gigasetelements-cli')
     count = 0
@@ -436,10 +370,11 @@ def remove_cron():
         log('Cronjob'.ljust(17) + ' | ' + color('removed'.ljust(8)) + ' | ' + str(i))
         count += 1
     if count == 0:
-        log('Cronjob'.ljust(17) + ' | ' + color('warning'.ljust(8)) + ' | ' + 'No items found for removal')
+        log('Cronjob'.ljust(17) + ' | ' + color('warning'.ljust(8)) + ' | ' + 'No items found for removal', 0, 1)
     else:
         cron.remove_all(command='gigasetelements-cli')
         cron.write()
+        sys.exit('\n')
     return
 
 
@@ -702,19 +637,14 @@ def base():
         if args.daemon:
             log('Run as background'.ljust(17) + ' | ' + color('daemon'.ljust(8)) + ' | ' + args.pid)
 
-        url_domo, cfg_domo, credfromfile = configure()
-
-        if args.cronjob is not None:
-            add_cron(credfromfile)
-            print()
-            sys.exit()
-
-        if args.remove and args.cronjob is None:
+        if args.remove:
             remove_cron()
-            print()
-            sys.exit()
 
-        check_version()
+        if args.cronjob:
+            add_cron()
+
+        if not args.noupdate:
+            check_version()
 
         auth_time = authenticate()
 
@@ -771,10 +701,16 @@ def base():
             list_events()
 
         if args.monitor:
-            monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo)
-
+            if args.monitor > 1 and args.sensorpairs:
+                try:
+                    for keypair in args.sensorpairs:
+                        cfg_domo = {key: value for key, value in (rule.split(":") for rule in keypair.lower().split(';'))}
+                except ValueError:
+                    log('Config'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | check sensor pairing value format', 3, 1)
+            else:
+                cfg_domo = None
+            monitor(auth_time, basestation_data, status_data, args.url, cfg_domo)
         print()
-
     except KeyboardInterrupt:
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
 
