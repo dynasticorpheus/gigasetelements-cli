@@ -444,7 +444,6 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
         args.monitor = 1
     log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
     from_ts = str(int(time.time()) * 1000)
-    print('\n')
     try:
         while 1:
             if args.monitor > 1 and time.time() - epoch > 59:
@@ -463,8 +462,8 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
             for item in reversed(lastevents['events']):
                 try:
                     if 'type' in item['o']:
-                        log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
-                            'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']))
+                        log('\r\x1b[K[-] ' + time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
+                            'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']), 0, 0, 1)
                         if args.monitor > 1:
                             if item['o']['type'] == 'ycam':
                                 domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', basestation_data, url_domo, cfg_domo)
@@ -472,8 +471,8 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
                                 domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower(),
                                          basestation_data, url_domo, cfg_domo)
                     else:
-                        log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
-                            ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'])
+                        log('\r\x1b[K[-] ' + time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
+                            ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'], 0, 0, 1)
                         domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower(), basestation_data, url_domo, cfg_domo)
                     from_ts = str(int(item['ts']) + 1)
                 except KeyError:
@@ -485,7 +484,7 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
     except KeyboardInterrupt:
         if args.monitor > 1:
             rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
-        log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
+        log('\r\x1b[K[-] ' + 'Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1)
     return
 
 
@@ -505,8 +504,6 @@ def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
         status_data = rest(GET, URL_HEALTH)
         rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()].split(',')[0] + '&nvalue=' +
              LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
-    sys.stdout.write('\033[F')
-    sys.stdout.write('\033[K')
     return
 
 
@@ -716,7 +713,7 @@ def base():
             monitor(auth_time, basestation_data, status_data, args.url, cfg_domo)
         print()
     except KeyboardInterrupt:
-        log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C')
+        log('\r\x1b[K[-] ' + 'Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1)
 
 
 def main():
