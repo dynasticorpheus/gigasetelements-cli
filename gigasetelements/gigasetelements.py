@@ -23,7 +23,7 @@ try:
     import configargparse
     import unidecode
 except ImportError as error:
-    sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1])
+    sys.exit(str(error) + '. Please install from PyPI: pip install --upgrade ' + str(error).rsplit(None, 1)[-1] + '\n')
 
 if os.name == 'posix':
     try:
@@ -138,14 +138,15 @@ def log(logme, rbg=0, exitnow=0, newline=None):
     if args.log is not None:
         logger = logging.getLogger(__name__)
         logger.info('[' + time.strftime('%c') + '] ' + logme)
+    if newline == 2:
+        print('\r\x1b[K', end='')
     if newline is not None:
         newline = ' '
     print(LOGCL[rbg] + '[-] ' + logme, end=newline)
     if exitnow == 1:
-        print()
         if args.restart:
             restart_program()
-        sys.exit()
+        sys.exit('\n')
     return
 
 
@@ -432,10 +433,9 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
     """List events realtime optionally filtered by type."""
     health = modus = ''
     epoch = time.time() - 60
-    if args.filter is None:
-        url_monitor = URL_EVENTS + '?limit=10'
-    else:
-        url_monitor = URL_EVENTS + '?limit=10&group=' + args.filter
+    url_monitor = URL_EVENTS + '?limit=10'
+    if args.filter is not None:
+        url_monitor = url_monitor + '&group=' + args.filter
     if cfg_domo and args.monitor > 1:
         mode = 'Domoticz mode'
         rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
@@ -462,8 +462,8 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
             for item in reversed(lastevents['events']):
                 try:
                     if 'type' in item['o']:
-                        log('\r\x1b[K[-] ' + time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
-                            'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']), 0, 0, 1)
+                        log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
+                            'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']), 0, 0, 2)
                         if args.monitor > 1:
                             if item['o']['type'] == 'ycam':
                                 domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', basestation_data, url_domo, cfg_domo)
@@ -471,8 +471,8 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
                                 domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower(),
                                          basestation_data, url_domo, cfg_domo)
                     else:
-                        log('\r\x1b[K[-] ' + time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
-                            ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'], 0, 0, 1)
+                        log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
+                            ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'], 0, 0, 2)
                         domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower(), basestation_data, url_domo, cfg_domo)
                     from_ts = str(int(item['ts']) + 1)
                 except KeyError:
@@ -484,7 +484,7 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
     except KeyboardInterrupt:
         if args.monitor > 1:
             rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
-        log('\r\x1b[K[-] ' + 'Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1)
+        log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1, 2)
     return
 
 
@@ -523,7 +523,6 @@ def sensor(basestation_data, sensor_exist, camera_data):
             print()
         except KeyError:
             print()
-            continue
     if sensor_exist['camera']:
         try:
             for cam in camera_data:
@@ -619,8 +618,7 @@ def start_logger(logfile):
         filehandle = logging.FileHandler(logfile, 'a')
     except IOError:
         print(Fore.RED + '[-] Unable to write log file ' + logfile)
-        print()
-        sys.exit()
+        sys.exit('\n')
     filehandle.setLevel(logging.INFO)
     logger.addHandler(filehandle)
     logger.info('[' + time.strftime('%c') + '] ' + 'Gigaset Elements'.ljust(17) + ' | ' + 'CLI'.ljust(8) + ' | ' + _VERSION_ + ' | ' + ' '.join(sys.argv[1:]))
@@ -713,7 +711,7 @@ def base():
             monitor(auth_time, basestation_data, status_data, args.url, cfg_domo)
         print()
     except KeyboardInterrupt:
-        log('\r\x1b[K[-] ' + 'Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1)
+        log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1, 2)
 
 
 def main():
