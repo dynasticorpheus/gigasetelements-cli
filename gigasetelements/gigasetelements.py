@@ -93,7 +93,7 @@ parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, c
 parser.add_argument('-y', '--privacy', help='switch privacy mode on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-a', '--stream', help='start camera cloud based streams', action='store_true', required=False)
 parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
-parser.add_argument('-A', '--snapshot', help='download camera snapshot', action='store_true', required=False)
+parser.add_argument('-A', '--snapshot', help='download camera snapshot', type=str, required=False, metavar='MAC address')
 parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-N', '--noupdate', help='do not periodically check for updates', action='store_true', required=False)
@@ -266,8 +266,8 @@ def collect_hw(basestation_data, camera_data):
     for item in basestation_data[0]['sensors']:
         sensor_id.setdefault(item['type'], []).append(item['id'])
     try:
-        if 'id' in camera_data[0] and len(camera_data[0]['id']) == 12:
-            sensor_id.update(dict.fromkeys(['yc01'], camera_data[0]['id']))
+        for mac in camera_data:
+            sensor_id.setdefault('yc01', []).append(mac['id'])
     except IndexError:
         pass
     for item in sensor_id:
@@ -597,15 +597,19 @@ def record(camera_data, sensor_exist):
     return
 
 
-def getsnapshot(camera_data, sensor_exist):
+def getsnapshot(sensor_id, sensor_exist):
     """Download snapshot from camera."""
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
-    image_name = 'snapshot_' + time.strftime('%y%m%d') + '_' + time.strftime('%H%M%S') + '.jpg'
+    if args.snapshot.upper() in sensor_id['yc01']:
+        mac = args.snapshot.upper()
+    else:
+        mac = sensor_id['yc01'][0]
+    image_name = mac + '_' + time.strftime('%y%m%d') + '_' + time.strftime('%H%M%S') + '.jpg'
     if filewritable('Snapshot image', image_name, 0):
         log('Camera snapshot'.ljust(17) + ' | ' + color('download'.ljust(8)) + ' | ' + image_name)
         with open(image_name, 'wb') as image:
-            image.write(rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/snapshot?fresh=true'))
+            image.write(rest(GET, URL_CAMERA + '/' + mac + '/snapshot?fresh=true'))
     return
 
 
@@ -677,7 +681,7 @@ def base():
             record(camera_data, sensor_exist)
 
         if args.snapshot:
-            getsnapshot(camera_data, sensor_exist)
+            getsnapshot(sensor_id, sensor_exist)
 
         if args.notifications:
             notifications()
