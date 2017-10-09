@@ -92,7 +92,7 @@ parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, ch
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-y', '--privacy', help='switch privacy mode on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-a', '--stream', help='start camera cloud based streams', action='store_true', required=False)
-parser.add_argument('-r', '--record', help='switch camera recording on/off', action='store_true', required=False)
+parser.add_argument('-r', '--record', help='switch camera recording on/off', type=str, required=False, metavar='MAC address')
 parser.add_argument('-A', '--snapshot', help='download camera snapshot', type=str, required=False, metavar='MAC address')
 parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
@@ -583,17 +583,21 @@ def camera_stream(camera_data, sensor_exist):
     return
 
 
-def record(camera_data, sensor_exist):
+def record(sensor_id, sensor_exist):
     """Start or stop camera recording based on current state."""
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
-    camera_status = rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/status')
+    if args.record.upper() in sensor_id['yc01']:
+        mac = args.record.upper()
+    else:
+        mac = sensor_id['yc01'][0]
+    camera_status = rest(GET, URL_CAMERA + '/' + mac + '/recording/status')
     if camera_status['description'] == 'Recording not started':
-        rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/start')
-        log('Camera recording'.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ')
+        rest(GET, URL_CAMERA + '/' + mac + '/recording/start')
+        log('Camera recording'.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + mac)
     if camera_status['description'] == 'Recording already started':
-        rest(GET, URL_CAMERA + '/' + str(camera_data[0]['id']) + '/recording/stop')
-        log('Camera recording'.ljust(17) + ' | ' + color('stopped'.ljust(8)) + ' | ')
+        rest(GET, URL_CAMERA + '/' + mac + '/recording/stop')
+        log('Camera recording'.ljust(17) + ' | ' + color('stopped'.ljust(8)) + ' | ' + mac)
     return
 
 
@@ -678,7 +682,7 @@ def base():
             camera_stream(camera_data, sensor_exist)
 
         if args.record:
-            record(camera_data, sensor_exist)
+            record(sensor_id, sensor_exist)
 
         if args.snapshot:
             getsnapshot(sensor_id, sensor_exist)
