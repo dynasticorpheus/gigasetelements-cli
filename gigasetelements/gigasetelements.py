@@ -91,7 +91,7 @@ parser.add_argument('-s', '--sensor', help='''show sensor status (use -ss to inc
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-y', '--privacy', help='switch privacy mode on/off', required=False, choices=('on', 'off'))
-parser.add_argument('-a', '--stream', help='start camera cloud based streams', action='store_true', required=False)
+parser.add_argument('-a', '--stream', help='start camera cloud based streams', type=str, required=False, metavar='MAC address')
 parser.add_argument('-r', '--record', help='switch camera recording on/off', type=str, required=False, metavar='MAC address')
 parser.add_argument('-A', '--snapshot', help='download camera snapshot', type=str, required=False, metavar='MAC address')
 parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
@@ -569,17 +569,17 @@ def notifications():
     return
 
 
-def camera_stream(camera_data, sensor_exist):
+def camera_stream(sensor_id, sensor_exist):
     """Show camera details and current state."""
     if not sensor_exist['camera']:
         log('Camera'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
-    try:
-        for cam in camera_data:
-            stream_data = rest(GET, URL_CAMERA + '/' + cam['id'] + '/liveview/start')
-            for stream in ('m3u8', 'rtmp', 'rtsp'):
-                log(cam['friendly_name'].ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
-    except KeyError:
-        print()
+    if args.stream.upper() in sensor_id['yc01']:
+        mac = args.stream.upper()
+    else:
+        mac = sensor_id['yc01'][0]
+    stream_data = rest(GET, URL_CAMERA + '/' + mac + '/liveview/start')
+    for stream in ('m3u8', 'rtmp', 'rtsp'):
+        log('Stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
     return
 
 
@@ -679,7 +679,7 @@ def base():
             set_privacy(basestation_data)
 
         if args.stream:
-            camera_stream(camera_data, sensor_exist)
+            camera_stream(sensor_id, sensor_exist)
 
         if args.record:
             record(sensor_id, sensor_exist)
