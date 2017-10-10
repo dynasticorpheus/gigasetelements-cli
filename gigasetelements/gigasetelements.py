@@ -76,7 +76,7 @@ parser.add_argument('-p', '--password', help='password in use with my.gigaset-el
 parser.add_argument('-n', '--notify', help='pushbullet token', required=False, metavar='TOKEN')
 parser.add_argument('-e', '--events', help='show last <number> of events', type=int, required=False)
 parser.add_argument('-d', '--date', help='filter events on begin date - end date', required=False, nargs=2, metavar='DD/MM/YYYY')
-parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires -m option)', required=False, metavar='HH:MM')
+parser.add_argument('-o', '--cronjob', help='schedule cron job at HH:MM (requires --modus or --record)', required=False, metavar='HH:MM')
 parser.add_argument('-x', '--remove', help='remove all cron jobs linked to this program', action='store_true', required=False)
 parser.add_argument('-f', '--filter', help='filter events on type', required=False, choices=(
     'door', 'window', 'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera', 'phone', 'smoke', 'umos'))
@@ -165,7 +165,7 @@ def filewritable(filetype, fileloc, mustexit=1):
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
     green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon', 'wifi',
-             'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success', 'download']
+             'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success', 'download', 'scheduled']
     orange = ['orange', 'warning', 'update']
     if args.log is not None:
         txt = txt.upper()
@@ -337,17 +337,21 @@ def istimeformat(timestr):
 
 
 def add_cron():
-    """Add job to crontab to set alarm modus."""
-    if args.modus is None:
-        log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Specify modus using -m option', 3, 1)
-    elif os.name == 'nt':
+    """Add job to crontab to set alarm modus or trigger recording."""
+    if os.name == 'nt':
         log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not supported on windows OS', 3, 1)
+    elif args.modus is None and args.record is None:
+        log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Requires --modus or --record', 3, 1)
+    if args.modus:
+        action = ' --modus ' + args.modus + ' '
+    else:
+        action = ' --record ' + args.record + ' '
     if istimeformat(args.cronjob):
         cron = CronTab(user=True)
         now = datetime.datetime.now()
         timer = now.replace(hour=time.strptime(args.cronjob, '%H:%M')[3], minute=time.strptime(args.cronjob, '%H:%M')[4], second=0, microsecond=0)
-        job = cron.new('gigasetelements-cli -u ' + args.username + ' -p ' + args.password + ' -m ' +
-                       args.modus, comment='added by gigasetelements-cli on ' + str(now)[:16])
+        job = cron.new('gigasetelements-cli -u ' + args.username + ' -p ' + args.password +
+                       action, comment='added by gigasetelements-cli on ' + str(now)[:16])
         job.month.on(datetime.datetime.now().strftime('%-m'))
         if now < timer:
             job.day.on(datetime.datetime.now().strftime('%-d'))
@@ -358,7 +362,7 @@ def add_cron():
         job.hour.on(time.strptime(args.cronjob, '%H:%M')[3])
         job.minute.on(time.strptime(args.cronjob, '%H:%M')[4])
         cron.write()
-        log('Cronjob'.ljust(17) + ' | ' + color(args.modus.ljust(8)) + ' | ' + 'Modus on ' + timer.strftime('%A %d %B %Y %H:%M'), 0, 1)
+        log('Cronjob'.ljust(17) + ' | ' + color('scheduled'.ljust(8)) + ' |' + action + '| ' + timer.strftime('%A %d %B %Y %H:%M'), 0, 1)
     else:
         log('Cronjob'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Use valid time (00:00 - 23:59)', 3, 1)
     return
