@@ -27,7 +27,7 @@ username=first.last@domain.com
 password=mybigsecret
 
 # access token to enable pushbullet notifications (optional)
-# pbtoken=z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
+# notify=z9FaKeSCKQDi2cmPUSHB62aiXx5I57eiujTOKENfS34
 
 
 [options]
