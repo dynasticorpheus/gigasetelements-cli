@@ -51,7 +51,7 @@ LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1
 
 SENSOR_FRIENDLY = {'ws02': 'window_sensor', 'ps01': 'presence_sensor', 'ps02': 'presence_sensor', 'ds01': 'door_sensor', 'ds02': 'door_sensor',
                    'is01': 'indoor_siren', 'sp01': 'smart_plug', 'bn01': 'button', 'yc01': 'camera', 'sd01': 'smoke', 'um01': 'umos',
-                   'hb01': 'hue_bridge', 'bs01': 'base_station', 'wd01': 'water'}
+                   'hb01': 'hue_bridge', 'hb01.hl01': 'hue_light', 'bs01': 'base_station', 'wd01': 'water'}
 
 AUTH_EXPIRE = 14400
 
