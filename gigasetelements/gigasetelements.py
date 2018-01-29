@@ -239,12 +239,12 @@ def systemstatus():
     camera_data = rest(GET, URL_CAMERA)
     status_data = rest(GET, URL_HEALTH)
     if status_data['systemHealth'] == 'green':
-        status_data['status_msg_id'] = ''
+        status_data['statusMsgId'] = ''
     else:
-        status_data['status_msg_id'] = ' | ' + status_data['status_msg_id']
+        status_data['statusMsgId'] = ' | ' + status_data['statusMsgId']
     if args.modus is None:
         log('Status'.ljust(17) + ' | ' + color(status_data['systemHealth'].ljust(8)) +
-            status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
+            status_data['statusMsgId'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
     return basestation_data, status_data, camera_data
 
 
@@ -280,7 +280,7 @@ def modus_switch(basestation_data, status_data):
     """Switch alarm modus."""
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Status'.ljust(17) + ' | ' + color(status_data['systemHealth'].ljust(8)) + status_data['status_msg_id'].upper() +
+    log('Status'.ljust(17) + ' | ' + color(status_data['systemHealth'].ljust(8)) + status_data['statusMsgId'].upper() +
         ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
@@ -672,9 +672,9 @@ def base():
 
         if args.sensor:
             sensor(basestation_data, sensor_exist, camera_data)
-            if status_data['status_msg_id'] == '':
-                status_data['status_msg_id'] = '\u2713'
-            pb_body = 'Status ' + status_data['systemHealth'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
+            if status_data['statusMsgId'] == '':
+                status_data['statusMsgId'] = '\u2713'
+            pb_body = 'Status ' + status_data['systemHealth'].upper() + ' | ' + status_data['statusMsgId'].upper() + \
                 ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
 
         if args.delay is not None:
