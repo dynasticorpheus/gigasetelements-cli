@@ -238,12 +238,12 @@ def systemstatus():
     log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
     camera_data = rest(GET, URL_CAMERA)
     status_data = rest(GET, URL_HEALTH)
-    if status_data['systemHealth'] == 'green':
+    if status_data['system_health'] == 'green':
         status_data['status_msg_id'] = ''
     else:
         status_data['status_msg_id'] = ' | ' + status_data['status_msg_id']
     if args.modus is None:
-        log('Status'.ljust(17) + ' | ' + color(status_data['systemHealth'].ljust(8)) +
+        log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) +
             status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
     return basestation_data, status_data, camera_data
 
@@ -280,7 +280,7 @@ def modus_switch(basestation_data, status_data):
     """Switch alarm modus."""
     switch = {'intrusion_settings': {'active_mode': args.modus}}
     rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
-    log('Status'.ljust(17) + ' | ' + color(status_data['systemHealth'].ljust(8)) + status_data['status_msg_id'].upper() +
+    log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() +
         ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
     return
 
@@ -453,10 +453,10 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
         while 1:
             if args.monitor > 1 and time.time() - epoch > 59:
                 status_data = rest(GET, URL_HEALTH)
-                if health != status_data['systemHealth'].lower():
-                    domoticz(status_data['systemHealth'].lower(), basestation_data[0]['id'].lower(),
+                if health != status_data['system_health'].lower():
+                    domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(),
                              basestation_data[0]['friendly_name'].lower(), basestation_data, url_domo, cfg_domo)
-                    health = status_data['systemHealth'].lower()
+                    health = status_data['system_health'].lower()
                 basestation_data = rest(GET, URL_BASE)
                 if modus != basestation_data[0]['intrusion_settings']['active_mode']:
                     domoticz(basestation_data[0]['intrusion_settings']['active_mode'].lower(), basestation_data[0]['id'].lower(),
@@ -508,7 +508,7 @@ def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
     else:
         status_data = rest(GET, URL_HEALTH)
         rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()].split(',')[0] + '&nvalue=' +
-             LEVEL.get(status_data['systemHealth'], '3') + '&svalue=' + friendly + ' | ' + event)
+             LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
     return
 
 
@@ -667,14 +667,14 @@ def base():
         if args.modus is not None and args.cronjob is None:
             modus_switch(basestation_data, status_data)
             if args.sensor is not True:
-                pb_body = 'Status ' + status_data['systemHealth'].upper() + ' | Modus set from ' + \
+                pb_body = 'Status ' + status_data['system_health'].upper() + ' | Modus set from ' + \
                     basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
 
         if args.sensor:
             sensor(basestation_data, sensor_exist, camera_data)
             if status_data['status_msg_id'] == '':
                 status_data['status_msg_id'] = '\u2713'
-            pb_body = 'Status ' + status_data['systemHealth'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
+            pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
                 ' | Modus ' + basestation_data[0]['intrusion_settings']['active_mode'].upper()
 
         if args.delay is not None:
