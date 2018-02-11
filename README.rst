@@ -21,13 +21,17 @@ For easy installation including dependencies simply run below command (with elev
 
 [-] *pip install gigasetelements-cli*
 
-**GITHUB** - [https://github.com/dynasticorpheus/gigaset-elements]
+**GITHUB** - [https://github.com/dynasticorpheus/gigasetelements-cli]
 
-[1] *git clone https://github.com/dynasticorpheus/gigaset-elements.git*  
+[1] *git clone -b develop https://github.com/dynasticorpheus/gigasetelements-cli*
 
 [2] install *dependencies*, pip install -r requirements.txt (with elevated privileges if needed)
 
 [3] *python setup.py install --force* (or run from source using wrapper ./gigasetelements-cli.py)
+
+**GITHUB** - [https://github.com/dynasticorpheus/gigasetelements-cli] [RECOMMENDED]
+
+[1] *pip install git+https://github.com/dynasticorpheus/gigasetelements-cli@develop*
 
 
 Features
