@@ -39,7 +39,7 @@ elif os.name == 'nt':
 else:
     CONFPATH = ['/opt/etc/gigasetelements-cli.conf', '/usr/local/etc/gigasetelements-cli.conf', '/usr/etc/gigasetelements-cli.conf',
                 '/etc/gigasetelements-cli.conf', os.path.expanduser('~/.gigasetelements-cli/gigasetelements-cli.conf'),
-                os.path.expanduser('~/.config/gigasetelements-cli/gigasetelements-cli.conf'),
+                os.path.expanduser('~/.config/gigasetelements-cli/gigasetelements-cli.conf'), os.path.expanduser('~/.gigasetelements-cli'),
                 os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
