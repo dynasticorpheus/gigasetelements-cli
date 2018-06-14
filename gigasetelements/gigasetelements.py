@@ -146,6 +146,7 @@ def log(logme, rbg=0, exitnow=0, newline=None):
     print(LOGCL[rbg] + '[-] ' + logme, end=newline)
     if exitnow == 1:
         if args.restart:
+            time.sleep(6)
             restart_program()
         sys.exit('\n')
     return
