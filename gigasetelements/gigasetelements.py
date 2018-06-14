@@ -64,7 +64,7 @@ URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
-URL_USAGE = 'https://goo.gl/oHJ565'
+URL_USAGE = 'https://goo.gl/Pt6RmK'
 
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
