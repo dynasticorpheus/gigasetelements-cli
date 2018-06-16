@@ -99,6 +99,7 @@ parser.add_argument('-t', '--monitor', help='show events using monitor mode (use
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-N', '--noupdate', help='do not periodically check for updates', action='store_true', required=False)
 parser.add_argument('-j', '--restart', help='automatically restart program in case of a connection error', action='store_true', required=False)
+parser.add_argument('-J', '--restartdelay', help='set restart delay in seconds', type=int, required=False, default=60)
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verification', action='store_true', required=False)
 parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='store_true', required=False)
@@ -146,7 +147,7 @@ def log(logme, rbg=0, exitnow=0, newline=None):
     print(LOGCL[rbg] + '[-] ' + logme, end=newline)
     if exitnow == 1:
         if args.restart:
-            time.sleep(6)
+            time.sleep(args.restartdelay)
             restart_program()
         sys.exit('\n')
     return
