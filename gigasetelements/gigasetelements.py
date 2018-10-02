@@ -185,6 +185,7 @@ def color(txt):
 def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=False):
     """REST interaction using requests module."""
     request = None
+    data = ''
     if args.insecure:
         pem = False
     else:
