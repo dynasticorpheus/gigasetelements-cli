@@ -481,7 +481,8 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
                     else:
                         log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
                             ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'], 0, 0, 2)
-                        domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower(), basestation_data, url_domo, cfg_domo)
+                        if args.monitor > 1:
+                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower(), basestation_data, url_domo, cfg_domo)
                     from_ts = str(int(item['ts']) + 1)
                 except KeyError:
                     continue
