@@ -64,7 +64,6 @@ URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
-URL_USAGE = 'https://goo.gl/Pt6RmK'
 
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
@@ -112,7 +111,7 @@ init(autoreset=True)
 s = requests.Session()
 s.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
 s.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
-POST, GET, HEAD = s.post, s.get, s.head
+POST, GET = s.post, s.get
 
 
 if args.silent:
@@ -231,7 +230,6 @@ def authenticate(reauthenticate=False):
         auth_type = auth_type[3:].title()
     rest(GET, URL_AUTH)
     log(auth_type.ljust(17) + ' | ' + color('success'.ljust(8)) + ' | ')
-    rest(HEAD, URL_USAGE, None, False, 2, 0, True)
     return auth_time
 
 
