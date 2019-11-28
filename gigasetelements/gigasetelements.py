@@ -49,9 +49,10 @@ LOGCL = {0: Fore.RESET, 1: Fore.GREEN, 2: Fore.YELLOW, 3: Fore.RED}
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',
          'custom': '20', 'away': '30', 'night': '40'}
 
-SENSOR_FRIENDLY = {'ws02': 'window_sensor', 'ps01': 'presence_sensor', 'ps02': 'presence_sensor', 'ds01': 'door_sensor', 'ds02': 'door_sensor',
-                   'is01': 'indoor_siren', 'sp01': 'smart_plug', 'bn01': 'button', 'yc01': 'camera', 'sd01': 'smoke', 'um01': 'umos',
-                   'hb01': 'hue_bridge', 'hb01.hl01': 'hue_light', 'bs01': 'base_station', 'wd01': 'water_sensor', 'cl01': 'climate_sensor'}
+SENSOR_FRIENDLY = {'ws02': 'window_sensor', 'ps01': 'presence_sensor', 'ps02': 'presence_sensor', 'ds01': 'door_sensor',
+                   'ds02': 'door_sensor', 'is01': 'indoor_siren', 'sp01': 'smart_plug', 'sp02': 'smart_plug', 'bn01': 'button',
+                   'yc01': 'camera', 'sd01': 'smoke', 'um01': 'umos', 'hb01': 'hue_bridge', 'hb01.hl01': 'hue_light',
+                   'bs01': 'base_station', 'wd01': 'water_sensor', 'cl01': 'climate_sensor'}
 
 AUTH_EXPIRE = 14400
 
@@ -324,7 +325,11 @@ def plug(basestation_data, sensor_exist, sensor_id):
     if not sensor_exist['smart_plug']:
         log('Plug'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     switch = {"name": args.plug}
-    rest(POST, URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + sensor_id['sp01'][0] + '/cmd', json.dumps(switch), True)
+    if 'sp02' in sensor_id:
+        plugid = sensor_id['sp02'][0]
+    else:
+        plugid = sensor_id['sp01'][0]
+    rest(POST, URL_BASE + '/' + basestation_data[0]['id'] + '/endnodes/' + plugid + '/cmd', json.dumps(switch), True)
     log('Plug'.ljust(17) + ' | ' + color(args.plug.ljust(8)) + ' | ')
     return
 
@@ -521,7 +526,7 @@ def sensor(basestation_data, sensor_exist, camera_data):
     for item in basestation_data[0]['sensors']:
         try:
             log(item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']), 0, 0, 0)
-            if item['type'] not in ['is01', 'sp01']:
+            if item['type'] not in ['is01', 'sp01', 'sp02']:
                 print('| battery ' + color(item['battery']['state']), end=' ')
             if item['type'] in ['ds02', 'ds01']:
                 print('| position ' + color(item['position_status']), end=' ')
