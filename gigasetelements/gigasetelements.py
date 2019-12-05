@@ -90,6 +90,7 @@ parser.add_argument('-R', '--rules', help='show custom rules', action='store_tru
 parser.add_argument('-P', '--pid', help='fully qualified name of pid file', default='/tmp/gigasetelements-cli.pid', required=False)
 parser.add_argument('-s', '--sensor', help='''show sensor status (use -ss to include sensor id's)''', action='count', default=0, required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
+parser.add_argument('-B', '--sensorid', help='select sensor', type=str, required=False, metavar='sensor id')
 parser.add_argument('-g', '--plug', help='switch plug on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-y', '--privacy', help='switch privacy mode on/off', required=False, choices=('on', 'off'))
 parser.add_argument('-a', '--stream', help='start camera cloud based streams', type=str, required=False, metavar='MAC address')
@@ -325,7 +326,9 @@ def plug(basestation_data, sensor_exist, sensor_id):
     if not sensor_exist['smart_plug']:
         log('Plug'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | Not found', 3, 1)
     switch = {"name": args.plug}
-    if 'sp02' in sensor_id:
+    if args.sensorid is not None:
+        plugid = args.sensorid.lower()
+    elif 'sp02' in sensor_id:
         plugid = sensor_id['sp02'][0]
     else:
         plugid = sensor_id['sp01'][0]
