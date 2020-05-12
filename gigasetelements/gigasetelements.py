@@ -593,7 +593,7 @@ def camera_stream(sensor_id, sensor_exist):
     else:
         mac = sensor_id['yc01'][0]
     stream_data = rest(GET, URL_CAMERA + '/' + mac + '/liveview/start')
-    for stream in ('m3u8', 'rtmp', 'rtsp'):
+    for stream in ('m3u8', 'rtsp'):
         log('Stream'.ljust(17) + ' | ' + stream.upper().ljust(8) + ' | ' + stream_data['uri'][stream])
     return
 
