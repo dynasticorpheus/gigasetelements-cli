@@ -65,6 +65,7 @@ URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
+URL_ELEMENTS = 'https://api.gigaset-elements.de/api/v2/me/elements'
 
 URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
 URL_ALERT = '/json.htm?type=command&param=udevice&idx='
@@ -106,6 +107,7 @@ parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verifi
 parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='store_true', required=False)
 parser.add_argument('-U', '--url', help='url (domoticz)', required=False)
 parser.add_argument('-X', '--sensorpairs', help='idx keypairs (domoticz)', required=False, action='append')
+parser.add_argument('-E', '--elements', help='write elements json object to file', nargs='?', const='/tmp/gigasetelements-cli.json', type=str, required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
 args = parser.parse_args()
@@ -169,7 +171,7 @@ def filewritable(filetype, fileloc, mustexit=1):
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
     green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon', 'wifi',
-             'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success', 'download', 'scheduled']
+             'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success', 'download', 'scheduled', 'write']
     orange = ['orange', 'warning', 'update']
     if args.log is not None:
         txt = txt.upper()
@@ -648,6 +650,16 @@ def start_logger(logfile):
     return
 
 
+def get_elements():
+    """Write elements json object."""
+    elements = rest(GET, URL_ELEMENTS)
+    if filewritable('JSON file', args.elements, 0):
+        log('JSON file'.ljust(17) + ' | ' + color('write'.ljust(8)) + ' | ' + args.elements)
+        with open(args.elements, 'w') as outfile:
+            json.dump(elements, outfile)
+    return
+
+
 def base():
     """Base program."""
     pb_body = None
@@ -721,6 +733,9 @@ def base():
             pass
         else:
             list_events()
+
+        if args.elements:
+            get_elements()
 
         if args.monitor:
             if args.monitor > 1 and args.sensorpairs:
