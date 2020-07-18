@@ -653,10 +653,12 @@ def start_logger(logfile):
 def get_elements():
     """Write elements json object."""
     elements = rest(GET, URL_ELEMENTS)
+    if sys.version_info[0] < 3 or os.name == 'nt':
+        elements = unicode(elements)
     if filewritable('JSON file', args.elements, 0):
         log('JSON file'.ljust(17) + ' | ' + color('write'.ljust(8)) + ' | ' + args.elements)
         with open(args.elements, 'w') as outfile:
-            json.dump(elements, outfile)
+            json.dump(elements, outfile, indent=4, sort_keys=False)
     return
 
 
