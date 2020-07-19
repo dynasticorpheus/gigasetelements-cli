@@ -243,6 +243,7 @@ def systemstatus():
     log('Basestation'.ljust(17) + ' | ' + color(basestation_data[0]['status'].ljust(8)) + ' | ' + basestation_data[0]['id'])
     camera_data = rest(GET, URL_CAMERA)
     status_data = rest(GET, URL_HEALTH)
+    elements_data = rest(GET, URL_ELEMENTS)
     if status_data['system_health'] == 'green':
         status_data['status_msg_id'] = ''
     else:
@@ -250,7 +251,7 @@ def systemstatus():
     if args.modus is None:
         log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) +
             status_data['status_msg_id'].upper() + ' | Modus ' + color(basestation_data[0]['intrusion_settings']['active_mode']))
-    return basestation_data, status_data, camera_data
+    return basestation_data, status_data, camera_data, elements_data
 
 
 def check_version():
@@ -524,20 +525,21 @@ def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
     return
 
 
-def sensor(basestation_data, sensor_exist, camera_data):
+def sensor(basestation_data, sensor_exist, camera_data, elements_data):
     """Show sensor details and current state."""
     log(basestation_data[0]['friendly_name'].ljust(17) + ' | ' + color(basestation_data[0]
                                                                        ['status'].ljust(8)) + ' | firmware ' + color(basestation_data[0]['firmware_status']))
     for item in basestation_data[0]['sensors']:
         try:
-            log(item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']), 0, 0, 0)
-            if item['type'] not in ['is01', 'sp01', 'sp02']:
-                print('| battery ' + color(item['battery']['state']), end=' ')
-            if item['type'] in ['ds02', 'ds01']:
-                print('| position ' + color(item['position_status']), end=' ')
-            if args.sensor > 1:
-                print('| ' + item['id'].upper(), end=' ')
-            print()
+            if item['type'] not in ['cl01', 'ts01']:
+                log(item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']), 0, 0, 0)
+                if item['type'] not in ['is01', 'sp01', 'sp02']:
+                    print('| battery ' + color(item['battery']['state']), end=' ')
+                if item['type'] in ['ds02', 'ds01']:
+                    print('| position ' + color(item['position_status']), end=' ')
+                if args.sensor > 1:
+                    print('| ' + item['id'].upper(), end=' ')
+                print()
         except KeyError:
             print()
     if sensor_exist['camera']:
@@ -552,6 +554,21 @@ def sensor(basestation_data, sensor_exist, camera_data):
                 if args.sensor > 1:
                     print('| ' + cam['id'].upper(), end=' ')
                 print()
+        except KeyError:
+            print()
+    if sensor_exist['thermostat']:
+        try:
+            for clm in elements_data["bs01"][0]["subelements"]:
+                if clm['type'] in ['bs01.ts01', 'bs01.cl01']:
+                    print('[-] ' + clm['friendlyName'].ljust(17) + ' | ' + color(clm['connectionStatus'].ljust(8)) + ' | firmware ' + color(clm['firmwareStatus']) +
+                        ' | battery ' + color(clm['batteryStatus']) + ' | temperature ' +str(round(clm['states']['temperature'], 1)) , end=' ')
+                    if clm['type'] == 'bs01.ts01':
+                        print('| setpoint ' +str(int(clm['states']['setPoint'])) , end=' ')
+                    else:
+                        print('| humidity ' +str(round(clm['states']['humidity'], 1)) , end=' ')
+                    if args.sensor > 1:
+                        print('| ' + clm['id'].rsplit(".", 1)[1].upper(), end=' ')
+            print()
         except KeyError:
             print()
     return
@@ -650,15 +667,14 @@ def start_logger(logfile):
     return
 
 
-def get_elements():
+def get_elements(elements_data):
     """Write elements json object."""
-    elements = rest(GET, URL_ELEMENTS)
     if sys.version_info[0] < 3 or os.name == 'nt':
-        elements = unicode(elements)
+        elements_data = unicode(elements)
     if filewritable('JSON file', args.elements, 0):
         log('JSON file'.ljust(17) + ' | ' + color('write'.ljust(8)) + ' | ' + args.elements)
         with open(args.elements, 'w') as outfile:
-            json.dump(elements, outfile, indent=4, sort_keys=False)
+            json.dump(elements_data, outfile, indent=4, sort_keys=False)
     return
 
 
@@ -684,7 +700,7 @@ def base():
 
         auth_time = authenticate()
 
-        basestation_data, status_data, camera_data = systemstatus()
+        basestation_data, status_data, camera_data, elements_data = systemstatus()
 
         sensor_id, sensor_exist = collect_hw(basestation_data, camera_data)
 
@@ -695,7 +711,7 @@ def base():
                     basestation_data[0]['intrusion_settings']['active_mode'].upper() + ' to ' + args.modus.upper()
 
         if args.sensor:
-            sensor(basestation_data, sensor_exist, camera_data)
+            sensor(basestation_data, sensor_exist, camera_data, elements_data)
             if status_data['status_msg_id'] == '':
                 status_data['status_msg_id'] = '\u2713'
             pb_body = 'Status ' + status_data['system_health'].upper() + ' | ' + status_data['status_msg_id'].upper() + \
@@ -737,7 +753,7 @@ def base():
             list_events()
 
         if args.elements:
-            get_elements()
+            get_elements(elements_data)
 
         if args.monitor:
             if args.monitor > 1 and args.sensorpairs:
