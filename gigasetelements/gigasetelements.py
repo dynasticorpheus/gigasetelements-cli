@@ -674,7 +674,7 @@ def get_elements(elements_data):
     if filewritable('JSON file', args.elements, 0):
         log('JSON file'.ljust(17) + ' | ' + color('write'.ljust(8)) + ' | ' + args.elements)
         with open(args.elements, 'w') as outfile:
-            json.dump(elements_data, outfile, indent=4, sort_keys=False)
+            json.dump(elements_data, outfile, indent=4, sort_keys=False, ensure_ascii=False)
     return
 
 
