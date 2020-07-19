@@ -568,7 +568,7 @@ def sensor(basestation_data, sensor_exist, camera_data, elements_data):
                         print('| humidity ' +str(round(clm['states']['humidity'], 1)) , end=' ')
                     if args.sensor > 1:
                         print('| ' + clm['id'].rsplit(".", 1)[1].upper(), end=' ')
-            print()
+                    print()
         except KeyError:
             print()
     return
@@ -670,7 +670,7 @@ def start_logger(logfile):
 def get_elements(elements_data):
     """Write elements json object."""
     if sys.version_info[0] < 3 or os.name == 'nt':
-        elements_data = unicode(elements)
+        elements_data = unicode(elements_data)
     if filewritable('JSON file', args.elements, 0):
         log('JSON file'.ljust(17) + ' | ' + color('write'.ljust(8)) + ' | ' + args.elements)
         with open(args.elements, 'w') as outfile:
