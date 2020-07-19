@@ -556,7 +556,7 @@ def sensor(basestation_data, sensor_exist, camera_data, elements_data):
                 print()
         except KeyError:
             print()
-    if sensor_exist['thermostat']:
+    if sensor_exist['thermostat'] or sensor_exist['climate_sensor']:
         try:
             for clm in elements_data["bs01"][0]["subelements"]:
                 if clm['type'] in ['bs01.ts01', 'bs01.cl01']:
