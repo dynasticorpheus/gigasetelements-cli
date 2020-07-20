@@ -535,7 +535,7 @@ def sensor(basestation_data, sensor_exist, camera_data, elements_data):
                 log(item['friendly_name'].ljust(17) + ' | ' + color(item['status'].ljust(8)) + ' | firmware ' + color(item['firmware_status']), 0, 0, 0)
                 if item['type'] not in ['is01', 'sp01', 'sp02']:
                     print('| battery ' + color(item['battery']['state']), end=' ')
-                if item['type'] in ['ds02', 'ds01']:
+                if item['type'] in ['ds02', 'ds01', 'ws02']:
                     print('| position ' + color(item['position_status']), end=' ')
                 if args.sensor > 1:
                     print('| ' + item['id'].upper(), end=' ')
