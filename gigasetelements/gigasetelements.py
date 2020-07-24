@@ -140,6 +140,8 @@ def log(logme, rbg=0, exitnow=0, newline=None):
         logme = unicode(logme)
     if os.name == 'nt' or args.log is not None:
         logme = unidecode.unidecode(logme)
+    if os.name == 'posix' and args.log is None and sys.version_info[0] <  3 and sys.stdout.encoding is None:
+        logme = unidecode.unidecode(logme)
     if args.log is not None:
         logger = logging.getLogger(__name__)
         logger.info('[' + time.strftime('%c') + '] ' + logme)
