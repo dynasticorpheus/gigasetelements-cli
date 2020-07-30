@@ -558,16 +558,20 @@ def sensor(basestation_data, sensor_exist, camera_data, elements_data):
                 print()
         except KeyError:
             print()
-    if sensor_exist['thermostat'] or sensor_exist['climate_sensor']:
+    if sensor_exist['thermostat'] or sensor_exist['climate_sensor'] or sensor_exist['umos']:
         try:
             for clm in elements_data["bs01"][0]["subelements"]:
-                if clm['type'] in ['bs01.ts01', 'bs01.cl01']:
+                if clm['type'] in ['bs01.ts01', 'bs01.cl01', 'bs01.um01']:
                     print('[-] ' + clm['friendlyName'].ljust(17) + ' | ' + color(clm['connectionStatus'].ljust(8)) + ' | firmware ' + color(clm['firmwareStatus']) +
                         ' | battery ' + color(clm['batteryStatus']) + ' | temperature ' +str(round(clm['states']['temperature'], 1)) , end=' ')
                     if clm['type'] == 'bs01.ts01':
                         print('| setpoint ' +str(int(clm['states']['setPoint'])) , end=' ')
-                    else:
+                    elif clm['type'] == 'bs01.um01':
+                        print('| pressure ' +str(int(clm['states']['pressure'])) , end=' ')
+                    elif clm['type'] == 'bs01.cl01':
                         print('| humidity ' +str(round(clm['states']['humidity'], 1)) , end=' ')
+                    else:
+                        pass
                     if args.sensor > 1:
                         print('| ' + clm['id'].rsplit(".", 1)[1].upper(), end=' ')
                     print()
