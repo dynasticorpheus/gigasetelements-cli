@@ -43,7 +43,7 @@ else:
                 os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.5.0b5'
+_VERSION_ = '1.6.0b0'
 
 LOGCL = {0: Fore.RESET, 1: Fore.GREEN, 2: Fore.YELLOW, 3: Fore.RED}
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',
@@ -67,10 +67,6 @@ URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/cha
 URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
 URL_ELEMENTS = 'https://api.gigaset-elements.de/api/v2/me/elements'
 
-URL_SWITCH = '/json.htm?type=command&param=switchlight&switchcmd='
-URL_ALERT = '/json.htm?type=command&param=udevice&idx='
-URL_LOG = '/json.htm?type=command&param=addlogmessage&message='
-
 parser = configargparse.ArgParser(description='Gigaset Elements - Command-line Interface by dynasticorpheus@gmail.com', default_config_files=CONFPATH)
 parser.add_argument('-c', '--config', help='fully qualified name of configuration-file', required=False, is_config_file=True)
 parser.add_argument('-u', '--username', help='username (email) in use with my.gigaset-elements.com', required=True)
@@ -84,7 +80,7 @@ parser.add_argument('-f', '--filter', help='filter events on type', required=Fal
     'door', 'window', 'motion', 'siren', 'plug', 'button', 'homecoming', 'intrusion', 'systemhealth', 'camera', 'phone', 'smoke', 'umos'))
 parser.add_argument('-m', '--modus', help='set modus', required=False, choices=('home', 'away', 'custom', 'night'))
 parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
-parser.add_argument('-D', '--daemon', help='daemonize during monitor/domoticz mode', action='store_true', required=False)
+parser.add_argument('-D', '--daemon', help='daemonize during monitor mode', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
 parser.add_argument('-l', '--log', help='fully qualified name of log file', required=False)
 parser.add_argument('-R', '--rules', help='show custom rules', action='store_true', required=False)
@@ -97,7 +93,7 @@ parser.add_argument('-y', '--privacy', help='switch privacy mode on/off', requir
 parser.add_argument('-a', '--stream', help='start camera cloud based streams', type=str, required=False, metavar='MAC address')
 parser.add_argument('-r', '--record', help='switch camera recording on/off', type=str, required=False, metavar='MAC address')
 parser.add_argument('-A', '--snapshot', help='download camera snapshot', type=str, required=False, metavar='MAC address')
-parser.add_argument('-t', '--monitor', help='show events using monitor mode (use -tt to activate domoticz mode)', action='count', default=0, required=False)
+parser.add_argument('-t', '--monitor', help='show events using monitor mode', action='store_true', required=False)
 parser.add_argument('-i', '--ignore', help='ignore configuration-file at predefined locations', action='store_true', required=False)
 parser.add_argument('-N', '--noupdate', help='do not periodically check for updates', action='store_true', required=False)
 parser.add_argument('-j', '--restart', help='automatically restart program in case of a connection error', action='store_true', required=False)
@@ -105,8 +101,6 @@ parser.add_argument('-J', '--restartdelay', help='set restart delay in seconds',
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verification', action='store_true', required=False)
 parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='store_true', required=False)
-parser.add_argument('-U', '--url', help='url (domoticz)', required=False)
-parser.add_argument('-X', '--sensorpairs', help='idx keypairs (domoticz)', required=False, action='append')
 parser.add_argument('-E', '--elements', help='write elements json object to file', nargs='?', const='/tmp/gigasetelements-cli.json', type=str, required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
@@ -448,52 +442,24 @@ def list_events():
     return
 
 
-def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
+def monitor(auth_time, basestation_data, status_data):
     """List events realtime optionally filtered by type."""
-    health = modus = ''
-    epoch = time.time() - 60
     url_monitor = URL_EVENTS + '?limit=10'
     if args.filter is not None:
         url_monitor = url_monitor + '&group=' + args.filter
-    if cfg_domo and args.monitor > 1:
-        mode = 'Domoticz mode'
-        rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode started')
-    else:
-        mode = 'Monitor mode'
-        args.monitor = 1
-    log(mode.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
+    log('Monitor mode'.ljust(17) + ' | ' + color('started'.ljust(8)) + ' | ' + 'CTRL+C to exit')
     from_ts = str(int(time.time()) * 1000)
     try:
         while 1:
-            if args.monitor > 1 and time.time() - epoch > 59:
-                status_data = rest(GET, URL_HEALTH)
-                if health != status_data['system_health'].lower():
-                    domoticz(status_data['system_health'].lower(), basestation_data[0]['id'].lower(),
-                             basestation_data[0]['friendly_name'].lower(), basestation_data, url_domo, cfg_domo)
-                    health = status_data['system_health'].lower()
-                basestation_data = rest(GET, URL_BASE)
-                if modus != basestation_data[0]['intrusion_settings']['active_mode']:
-                    domoticz(basestation_data[0]['intrusion_settings']['active_mode'].lower(), basestation_data[0]['id'].lower(),
-                             basestation_data[0]['friendly_name'].lower(), basestation_data, url_domo, cfg_domo)
-                    modus = basestation_data[0]['intrusion_settings']['active_mode']
-                epoch = time.time()
             lastevents = rest(GET, url_monitor + '&from_ts=' + from_ts)
             for item in reversed(lastevents['events']):
                 try:
                     if 'type' in item['o']:
                         log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) + ' | ' + item['o'][
                             'type'].ljust(8) + ' | ' + item['type'] + ' ' + item['o'].get('friendly_name', item['o']['type']), 0, 0, 2)
-                        if args.monitor > 1:
-                            if item['o']['type'] == 'ycam':
-                                domoticz(item['type'][5:].lower(), item['source_id'].lower(), 'ycam', basestation_data, url_domo, cfg_domo)
-                            else:
-                                domoticz(item['type'].lower(), item['o']['id'].lower(), item['o'].get('friendly_name', 'basestation').lower(),
-                                         basestation_data, url_domo, cfg_domo)
                     else:
                         log(time.strftime('%m/%d/%y %H:%M:%S', time.localtime(int(item['ts']) / 1000)) +
                             ' | ' + 'system'.ljust(8) + ' | ' + item['source_type'] + ' ' + item['type'], 0, 0, 2)
-                        if args.monitor > 1:
-                            domoticz(item['type'].lower(), basestation_data[0]['id'].lower(), item['source_type'].lower(), basestation_data, url_domo, cfg_domo)
                     from_ts = str(int(item['ts']) + 1)
                 except KeyError:
                     continue
@@ -502,28 +468,7 @@ def monitor(auth_time, basestation_data, status_data, url_domo, cfg_domo):
             else:
                 time.sleep(1)
     except KeyboardInterrupt:
-        if args.monitor > 1:
-            rest(GET, url_domo + URL_LOG + 'Gigaset Elements - Command-line Interface: Domoticz mode halted')
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1, 2)
-    return
-
-
-def domoticz(event, sid, friendly, basestation_data, url_domo, cfg_domo):
-    """Push events to domoticz server."""
-    if event in ['open', 'close', 'sirenon', 'sirenoff', 'on', 'off', 'movement', 'motion']:
-        if event in ['close', 'sirenoff', 'off']:
-            cmd = 'off'
-        else:
-            cmd = 'on'
-        rest(GET, url_domo + URL_SWITCH + cmd.title() + '&idx=' + cfg_domo[sid])
-    elif event in ['button1', 'button2', 'button3', 'button4']:
-        rest(GET, url_domo + URL_ALERT + cfg_domo[sid] + '&nvalue=1' + '&svalue=' + event[-1:] + '0')
-    elif event in ['home', 'custom', 'away', 'night']:
-        rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()].split(',')[1] + '&nvalue=1' + '&svalue=' + LEVEL.get(event))
-    else:
-        status_data = rest(GET, URL_HEALTH)
-        rest(GET, url_domo + URL_ALERT + cfg_domo[basestation_data[0]['id'].lower()].split(',')[0] + '&nvalue=' +
-             LEVEL.get(status_data['system_health'], '3') + '&svalue=' + friendly + ' | ' + event)
     return
 
 
@@ -762,15 +707,7 @@ def base():
             get_elements(elements_data)
 
         if args.monitor:
-            if args.monitor > 1 and args.sensorpairs:
-                try:
-                    for keypair in args.sensorpairs:
-                        cfg_domo = {key: value for key, value in (rule.split(":") for rule in keypair.lower().split(';'))}
-                except ValueError:
-                    log('Config'.ljust(17) + ' | ' + 'ERROR'.ljust(8) + ' | check sensor pairing value format', 3, 1)
-            else:
-                cfg_domo = None
-            monitor(auth_time, basestation_data, status_data, args.url, cfg_domo)
+            monitor(auth_time, basestation_data, status_data)
         print()
     except KeyboardInterrupt:
         log('Program'.ljust(17) + ' | ' + color('halted'.ljust(8)) + ' | ' + 'CTRL+C', 0, 1, 2)

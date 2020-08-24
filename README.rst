@@ -46,7 +46,6 @@ Features
  * Show custom rules (button/plug)
  * Switch plug on/off
  * Set alarm trigger delay
- * Domoticz home automation system support
 
 Usage
 -----
@@ -131,7 +130,6 @@ To do
 * Improve overall code
 * Replicate all functionality from app and/or website ... a long list
 * Support for gigaset elements button
-* Support for domoticz home automation system
 
 
 Notes
