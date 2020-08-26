@@ -63,6 +63,8 @@ URL_EVENTS = 'https://api.gigaset-elements.de/api/v2/me/events'
 URL_BASE = 'https://api.gigaset-elements.de/api/v1/me/basestations'
 URL_CAMERA = 'https://api.gigaset-elements.de/api/v1/me/cameras'
 URL_HEALTH = 'https://api.gigaset-elements.de/api/v2/me/health'
+URL_DEVICES = 'https://api.gigaset-elements.de/api/v1/me/devices'
+URL_STATES = 'https://api.gigaset-elements.de/api/v1/me/states'
 URL_CHANNEL = 'https://api.gigaset-elements.de/api/v1/me/notifications/users/channels'
 URL_RELEASE = 'https://pypi.python.org/pypi/gigasetelements-cli/json'
 URL_ELEMENTS = 'https://api.gigaset-elements.de/api/v2/me/elements'
@@ -82,6 +84,8 @@ parser.add_argument('-m', '--modus', help='set modus', required=False, choices=(
 parser.add_argument('-k', '--delay', help='set alarm timer delay in seconds (use 0 to disable)', type=int, required=False)
 parser.add_argument('-D', '--daemon', help='daemonize during monitor mode', action='store_true', required=False)
 parser.add_argument('-z', '--notifications', help='show notification status', action='store_true', required=False)
+parser.add_argument('-X', '--panic', help='trigger alarm', action='store_true', required=False)
+parser.add_argument('-U', '--end', help='end alarm', action='store_true', required=False)
 parser.add_argument('-l', '--log', help='fully qualified name of log file', required=False)
 parser.add_argument('-R', '--rules', help='show custom rules', action='store_true', required=False)
 parser.add_argument('-P', '--pid', help='fully qualified name of pid file', default='/tmp/gigasetelements-cli.pid', required=False)
@@ -109,7 +113,7 @@ init(autoreset=True)
 s = requests.Session()
 s.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
 s.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
-POST, GET = s.post, s.get
+POST, GET, DELETE = s.post, s.get, s.delete
 
 
 if args.silent:
@@ -166,7 +170,7 @@ def filewritable(filetype, fileloc, mustexit=1):
 
 def color(txt):
     """Add color to string based on presence in list and return in uppercase."""
-    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon', 'wifi',
+    green = ['ok', 'online', 'closed', 'up_to_date', 'home', 'auto', 'on', 'hd', 'cable', 'normal', 'daemon', 'wifi', 'ended',
              'started', 'active', 'green', 'armed', 'pushed', 'verified', 'loaded', 'success', 'download', 'scheduled', 'write']
     orange = ['orange', 'warning', 'update']
     if args.log is not None:
@@ -203,7 +207,7 @@ def rest(method, url, payload=None, header=False, timeout=90, end=1, silent=Fals
             log('ERROR'.ljust(17) + ' | ' + 'UNKNOWN'.ljust(8) + ' | ' + str(error), 3, end)
     if request is not None:
         if not silent:
-            if request.status_code != requests.codes.ok:  # pylint: disable=no-member
+            if not request.ok:  # pylint: disable=no-member
                 urlsplit = urlparse(request.url)
                 log('HTTP ERROR'.ljust(17) + ' | ' + str(request.status_code).ljust(8) + ' | ' + request.reason + ' ' + str(urlsplit.path), 3, end)
         contenttype = request.headers.get('Content-Type', default='').split(';')[0]
@@ -284,6 +288,21 @@ def modus_switch(basestation_data, status_data):
     rest(POST, URL_BASE + '/' + basestation_data[0]['id'], json.dumps(switch))
     log('Status'.ljust(17) + ' | ' + color(status_data['system_health'].ljust(8)) + status_data['status_msg_id'].upper() +
         ' | Modus set from ' + color(basestation_data[0]['intrusion_settings']['active_mode']) + ' to ' + color(args.modus))
+    return
+
+
+def trigger_alarm():
+    """Trigger alarm."""
+    switch = {'action': 'alarm.user.start'}
+    rest(POST, URL_DEVICES + '/webfrontend/sink', json.dumps(switch))
+    log('Alarm'.ljust(17) + ' | ' + color('trigger'.ljust(8)) + ' | ')
+    return
+
+
+def end_alarm():
+    """End alarm."""
+    rest(DELETE, URL_STATES + '/userAlarm')
+    log('Alarm'.ljust(17) + ' | ' + color('ended'.ljust(8)) + ' | ')
     return
 
 
@@ -705,6 +724,12 @@ def base():
 
         if args.elements:
             get_elements(elements_data)
+
+        if args.panic:
+            trigger_alarm()
+
+        if args.end:
+            end_alarm()
 
         if args.monitor:
             monitor(auth_time, basestation_data, status_data)
