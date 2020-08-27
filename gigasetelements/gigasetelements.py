@@ -43,7 +43,7 @@ else:
                 os.path.expanduser('~/Library/Application Support/gigasetelements-cli/gigasetelements-cli.conf')]
 
 _AUTHOR_ = 'dynasticorpheus@gmail.com'
-_VERSION_ = '1.6.0b0'
+_VERSION_ = '1.6.0b1'
 
 LOGCL = {0: Fore.RESET, 1: Fore.GREEN, 2: Fore.YELLOW, 3: Fore.RED}
 LEVEL = {'intrusion': '4', 'unusual': '3', 'button': '2', 'ok': '1', 'green': '1', 'orange': '3', 'red': '4', 'home': '10',

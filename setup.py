@@ -23,7 +23,7 @@ if os.name == 'posix':
 
 setup(
     name='gigasetelements-cli',
-    version='1.5.0b5',
+    version='1.6.0b1',
     description='gigasetelements-cli allows you to control your \
     Gigaset Elements home security system from the command line.',
     long_description=long_description,
