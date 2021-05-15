@@ -155,6 +155,7 @@ A lot of time & effort goes into making gigasetelements-cli so if you like it yo
 * *Silke H*
 * *Frank M*
 * *Max G*
+* *Andreas G*
 
 License
 -------
