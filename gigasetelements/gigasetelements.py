@@ -56,6 +56,8 @@ SENSOR_FRIENDLY = {'ws02': 'window_sensor', 'ps01': 'presence_sensor', 'ps02': '
 
 AUTH_EXPIRE = 14400
 
+JSONFILE = os.path.join(os.path.expanduser('~'), 'gigasetelements-cli.json')
+
 URL_STATUS = 'https://status.gigaset-elements.de/api/v1/status'
 URL_IDENTITY = 'https://im.gigaset-elements.de/identity/api/v1/user/login'
 URL_AUTH = 'https://api.gigaset-elements.de/api/v1/auth/openid/begin?op=gigaset'
@@ -88,7 +90,7 @@ parser.add_argument('-X', '--panic', help='trigger alarm', action='store_true', 
 parser.add_argument('-U', '--end', help='end alarm', action='store_true', required=False)
 parser.add_argument('-l', '--log', help='fully qualified name of log file', required=False)
 parser.add_argument('-R', '--rules', help='show custom rules', action='store_true', required=False)
-parser.add_argument('-P', '--pid', help='fully qualified name of pid file', default='/tmp/gigasetelements-cli.pid', required=False)
+parser.add_argument('-P', '--pid', help='fully qualified name of pid file', default='/var/run/gigasetelements-cli.pid', required=False)
 parser.add_argument('-s', '--sensor', help='''show sensor status (use -ss to include sensor id's)''', action='count', default=0, required=False)
 parser.add_argument('-b', '--siren', help='arm/disarm siren', required=False, choices=('arm', 'disarm'))
 parser.add_argument('-B', '--sensorid', help='select sensor', type=str, required=False, metavar='sensor id')
@@ -105,7 +107,7 @@ parser.add_argument('-J', '--restartdelay', help='set restart delay in seconds',
 parser.add_argument('-q', '--quiet', help='do not send pushbullet message', action='store_true', required=False)
 parser.add_argument('-I', '--insecure', help='disable SSL/TLS certificate verification', action='store_true', required=False)
 parser.add_argument('-S', '--silent', help='suppress urllib3 warnings', action='store_true', required=False)
-parser.add_argument('-E', '--elements', help='write elements json object to file', nargs='?', const='/tmp/gigasetelements-cli.json', type=str, required=False)
+parser.add_argument('-E', '--elements', help='write elements json object to file', nargs='?', const=JSONFILE, type=str, required=False)
 parser.add_argument('-v', '--version', help='show version', action='version', version='%(prog)s version ' + str(_VERSION_))
 
 args = parser.parse_args()
