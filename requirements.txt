@@ -1,6 +1,8 @@
+configargparse>=0.12.0
+future>=0.15.2
 requests>=2.9.1
-colorama>=0.3.5
+colorama>=0.3.7
 python-crontab>=2.0.1
-pushbullet.py>=0.9.0
-unidecode>=0.4.18
-daemonize>=2.4.2
+pushbullet.py>=0.10.0
+unidecode>=0.4.19
+daemonize>=2.4.6

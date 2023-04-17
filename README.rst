@@ -1,14 +1,13 @@
 Gigaset Elements API command-line interface
 ===========================================
 
+|Version status| |Github stars| |Github forks| |CodeQL| |Quality Gate Status| |Downloads| |BuyMeCoffee|
+
 gigasetelements-cli is a python based program which allows you to control your Gigaset Elements home security system.
 It comes with an easy to use CLI (command-line interface) suitable for direct use or cron jobs.
 
-.. image:: https://weblog.bol.com/wp-content/uploads/2015/04/gigaset-elements.jpg
+.. image:: https://asset.conrad.com/media10/isa/160267/c1/-/nl/1650392_BB_00_FB/image.jpg
     :target: https://www.gigaset-elements.com
-
-.. image:: https://lh3.googleusercontent.com/k8pmHPby3b76PmNXTyhhK26fp64xJjGwjVo4PmTpp4FotIcE12Na6eRBNgdKFhvlx-uI=w1920-h1080-rw-no
-    :target: https://plus.google.com/communities/108042802009267082650
 
 Installation
 ------------
@@ -19,13 +18,17 @@ For easy installation including dependencies simply run below command (with elev
 
 [-] *pip install gigasetelements-cli*
 
-**GITHUB** - [https://github.com/dynasticorpheus/gigaset-elements]
+**GITHUB** - [https://github.com/dynasticorpheus/gigasetelements-cli]
 
-[1] *git clone https://github.com/dynasticorpheus/gigaset-elements.git*  
+[1] *git clone -b develop https://github.com/dynasticorpheus/gigasetelements-cli*
 
-[2] install *dependencies*, see requirements.txt
+[2] install *dependencies*, pip install -r requirements.txt (with elevated privileges if needed)
 
-[3] *python setup.py install* (or run from source using wrapper ./gigasetelements-cli.py)
+[3] *python setup.py install --force* (or run from source using wrapper ./gigasetelements-cli.py)
+
+**GITHUB** - [https://github.com/dynasticorpheus/gigasetelements-cli] [RECOMMENDED]
+
+[1] *pip install git+https://github.com/dynasticorpheus/gigasetelements-cli@develop*
 
 
 Features
@@ -43,7 +46,6 @@ Features
  * Show custom rules (button/plug)
  * Switch plug on/off
  * Set alarm trigger delay
- * Domoticz home automation system support
 
 Usage
 -----
@@ -128,7 +130,6 @@ To do
 * Improve overall code
 * Replicate all functionality from app and/or website ... a long list
 * Support for gigaset elements button
-* Support for domoticz home automation system
 
 
 Notes
@@ -136,7 +137,7 @@ Notes
 Been ages since I have coded and python is new for me so in other words be kind :)
 
 
-Donate
+Donation Hall of Fame
 ------
 A lot of time & effort goes into making gigasetelements-cli so if you like it you might want to consider buying me a :beer: :)
 
@@ -151,7 +152,26 @@ A lot of time & effort goes into making gigasetelements-cli so if you like it yo
 * *Joshua T*
 * *Auke C*
 * *RPC B*
+* *Silke H*
+* *Frank M*
+* *Max G*
+* *Andreas G*
 
 License
 -------
 GPL2
+
+.. |Version status| image:: https://img.shields.io/pypi/v/gigasetelements-cli.svg
+   :target: https://pypi.python.org/pypi/gigasetelements-cli/
+.. |Downloads| image:: https://img.shields.io/pypi/dm/gigasetelements-cli.svg
+   :target: https://pypi.python.org/pypi/gigasetelements-cli/
+.. |CodeQL| image:: https://github.com/dynasticorpheus/gigasetelements-cli/actions/workflows/codeql-analysis.yml/badge.svg
+   :target: https://github.com/dynasticorpheus/gigasetelements-cli/actions/workflows/codeql-analysis.yml
+.. |Github forks| image:: https://img.shields.io/github/forks/dynasticorpheus/gigasetelements-cli.svg
+   :target: https://github.com/dynasticorpheus/gigasetelements-cli/network/members/
+.. |Github stars| image:: https://img.shields.io/github/stars/dynasticorpheus/gigasetelements-cli.svg
+   :target: https://github.com/dynasticorpheus/gigasetelements-cli/stargazers/
+.. |BuyMeCoffee| image:: https://camo.githubusercontent.com/cd005dca0ef55d7725912ec03a936d3a7c8de5b5/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6275792532306d6525323061253230636f666665652d646f6e6174652d79656c6c6f772e737667
+   :target: https://buymeacoffee.com/dynasticorpheus/
+.. |Quality Gate Status| image:: https://sonarcloud.io/api/project_badges/measure?project=dynasticorpheus_gigasetelements-cli&metric=alert_status
+   :target: https://sonarcloud.io/summary/new_code?id=dynasticorpheus_gigasetelements-cli/
